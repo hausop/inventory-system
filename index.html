@@ -23,6 +23,13 @@
             font-size: 18px;
             color: #6b7280;
         }
+        /* 文字截斷樣式 */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -77,6 +84,8 @@
           const [adminPassword, setAdminPassword] = useState('');
           const [showPasswordModal, setShowPasswordModal] = useState(false);
           const [editingItem, setEditingItem] = useState(null);
+          const [searchTerm, setSearchTerm] = useState('');
+          const [filterCategory, setFilterCategory] = useState('');
 
           // 初始化示例數據
           const [inventory, setInventory] = useState(() => {
@@ -189,6 +198,14 @@
             ));
           };
 
+          // 篩選和搜尋邏輯
+          const filteredInventory = inventory.filter(item => {
+            const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                item.location.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = !filterCategory || item.category === filterCategory;
+            return matchesSearch && matchesCategory;
+          });
+
           const deleteRecord = (itemId, recordIndex) => {
             if (!isAdmin) return;
             setInventory(prev => prev.map(item => {
@@ -210,9 +227,12 @@
 
           // 總覽頁面
           const OverviewPage = () => (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-800">禮品庫存管理</h1>
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
+                  <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowPasswordModal(true)}
@@ -231,27 +251,68 @@
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {inventory.map(item => (
-                  <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                      <Package size={64} className="text-gray-400" />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p><span className="font-medium">庫存：</span>{item.stock}</p>
-                        <p><span className="font-medium">位置：</span>{item.location.split('\n')[0]}</p>
+              {/* 搜尋和篩選 */}
+              <div className="mb-6 flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="🔍 搜尋商品名稱..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">全部類別</option>
+                  {[...new Set(inventory.map(item => item.category))].map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 緊湊卡片網格 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {filteredInventory.map(item => (
+                  <div 
+                    key={item.id} 
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setCurrentView('detail');
+                    }}
+                  >
+                    {/* 圖片區域 - 更小更緊湊 */}
+                    <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
+                      <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                      {/* 庫存標籤 */}
+                      <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        item.stock < 10 
+                          ? 'bg-red-100 text-red-700' 
+                          : item.stock < 50 
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {item.stock}
                       </div>
-                      <button
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setCurrentView('detail');
-                        }}
-                        className="w-full mt-3 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                      >
-                        查看詳情
-                      </button>
+                    </div>
+                    
+                    {/* 內容區域 - 極簡設計 */}
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm text-gray-800 mb-1 line-clamp-2 leading-tight">
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          {item.category}
+                        </span>
+                        <div className="flex items-center text-xs text-gray-400">
+                          📍 {item.location.split('\n')[0].slice(0, 8)}...
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
