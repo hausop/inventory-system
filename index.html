@@ -87,6 +87,41 @@
           const [searchTerm, setSearchTerm] = useState('');
           const [filterCategory, setFilterCategory] = useState('');
 
+          // 處理瀏覽器上一頁功能
+          useEffect(() => {
+            const handlePopState = (event) => {
+              if (currentView === 'detail') {
+                setCurrentView('overview');
+                setSelectedItem(null);
+              }
+            };
+
+            // 當進入詳細頁面時，推送新的歷史狀態
+            if (currentView === 'detail' && selectedItem) {
+              window.history.pushState({ view: 'detail', itemId: selectedItem.id }, '', `#item-${selectedItem.id}`);
+            } else if (currentView === 'overview') {
+              window.history.pushState({ view: 'overview' }, '', '#');
+            }
+
+            window.addEventListener('popstate', handlePopState);
+            return () => {
+              window.removeEventListener('popstate', handlePopState);
+            };
+          }, [currentView, selectedItem]);
+
+          // 修改導航函數以支援瀏覽器歷史
+          const navigateToDetail = (item) => {
+            setSelectedItem(item);
+            setCurrentView('detail');
+            window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
+          };
+
+          const navigateToOverview = () => {
+            setCurrentView('overview');
+            setSelectedItem(null);
+            window.history.pushState({ view: 'overview' }, '', '#');
+          };
+
           // 初始化示例數據
           const [inventory, setInventory] = useState(() => {
             try {
@@ -280,21 +315,18 @@
                   <div 
                     key={item.id} 
                     className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group"
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setCurrentView('detail');
-                    }}
+                    onClick={() => navigateToDetail(item)}
                   >
                     {/* 圖片區域 - 更小更緊湊 */}
                     <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
                       <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
-                      {/* 庫存標籤 */}
-                      <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${
+                      {/* 庫存標籤 - 更大更明顯 */}
+                      <div className={`absolute top-2 right-2 px-3 py-1.5 rounded-full text-sm font-bold shadow-md ${
                         item.stock < 10 
-                          ? 'bg-red-100 text-red-700' 
+                          ? 'bg-red-500 text-white' 
                           : item.stock < 50 
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-green-100 text-green-700'
+                          ? 'bg-yellow-500 text-white'
+                          : 'bg-green-500 text-white'
                       }`}>
                         {item.stock}
                       </div>
@@ -345,7 +377,7 @@
               <div className="p-6 max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                   <button
-                    onClick={() => setCurrentView('overview')}
+                    onClick={navigateToOverview}
                     className="text-blue-500 hover:text-blue-700 flex items-center gap-2"
                   >
                     ← 返回總覽
@@ -373,9 +405,10 @@
                       <div className="space-y-3">
                         <div>
                           <span className="font-semibold text-gray-700">目前庫存：</span>
-                          <span className={`text-2xl ml-2 ${selectedItem.stock < 10 ? 'text-red-500' : 'text-green-600'}`}>
+                          <span className={`text-4xl font-bold ml-3 ${selectedItem.stock < 10 ? 'text-red-500' : selectedItem.stock < 50 ? 'text-yellow-500' : 'text-green-600'}`}>
                             {selectedItem.stock}
                           </span>
+                          <span className="text-lg text-gray-500 ml-2">件</span>
                         </div>
                         <div>
                           <span className="font-semibold text-gray-700">存放位置：</span>
