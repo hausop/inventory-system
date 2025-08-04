@@ -393,6 +393,7 @@
                   )}
                 </div>
 
+                {/* 商品資訊 */}
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
@@ -411,12 +412,20 @@
                           <span className="text-lg text-gray-500 ml-2">件</span>
                         </div>
                         <div>
+                          <span className="font-semibold text-gray-700">類別：</span>
+                          <span className="ml-2 text-gray-600">{selectedItem.category}</span>
+                        </div>
+                        <div>
                           <span className="font-semibold text-gray-700">存放位置：</span>
                           <p className="mt-1 whitespace-pre-line text-gray-600">{selectedItem.location}</p>
                         </div>
                         <div>
-                          <span className="font-semibold text-gray-700">類別：</span>
-                          <span className="ml-2 text-gray-600">{selectedItem.category}</span>
+                          <span className="font-semibold text-gray-700">規格：</span>
+                          <span className="ml-2 text-gray-600">{selectedItem.specifications || '未設定'}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">單價：</span>
+                          <span className="ml-2 text-gray-600">NT$ {selectedItem.unitPrice || '未設定'}</span>
                         </div>
                       </div>
                     </div>
@@ -456,14 +465,585 @@
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">操作人員</label>
-                      <input
-                        type="text"
-                        value={recordForm.operator}
-                        onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
+                      <div className="flex gap-2">
+                        <select
+                          value={recordForm.operator}
+                          onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">請選擇操作人員</option>
+                          {operators.map(op => (<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>禮品庫存管理系統</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 確保載入時有基本樣式 */
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f9fafb;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #6b7280;
+        }
+        /* 文字截斷樣式 */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">載入中...</div>
+    </div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // 圖示組件 (使用 SVG 替代 lucide)
+        const Package = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+        );
+        
+        const Plus = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+        );
+        
+        const Edit3 = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+        );
+        
+        const Save = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+        );
+        
+        const X = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        );
+        
+        const FileText = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+
+        const InventoryManager = () => {
+          const [currentView, setCurrentView] = useState('overview');
+          const [selectedItem, setSelectedItem] = useState(null);
+          const [isAdmin, setIsAdmin] = useState(false);
+          const [adminPassword, setAdminPassword] = useState('');
+          const [showPasswordModal, setShowPasswordModal] = useState(false);
+          const [editingItem, setEditingItem] = useState(null);
+          const [filterCategory, setFilterCategory] = useState('');
+          const [operators, setOperators] = useState(() => {
+            const saved = localStorage.getItem('operators');
+            return saved ? JSON.parse(saved) : ['小王', '小李', '小陳', '小美', '小張'];
+          });
+
+          // 處理瀏覽器上一頁功能
+          useEffect(() => {
+            const handlePopState = (event) => {
+              if (currentView === 'detail') {
+                setCurrentView('overview');
+                setSelectedItem(null);
+              }
+            };
+
+            // 當進入詳細頁面時，推送新的歷史狀態
+            if (currentView === 'detail' && selectedItem) {
+              window.history.pushState({ view: 'detail', itemId: selectedItem.id }, '', `#item-${selectedItem.id}`);
+            } else if (currentView === 'overview') {
+              window.history.pushState({ view: 'overview' }, '', '#');
+            }
+
+            window.addEventListener('popstate', handlePopState);
+            return () => {
+              window.removeEventListener('popstate', handlePopState);
+            };
+          }, [currentView, selectedItem]);
+
+          // 修改導航函數以支援瀏覽器歷史
+          const navigateToDetail = (item) => {
+            setSelectedItem(item);
+            setCurrentView('detail');
+            window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
+          };
+
+          const navigateToOverview = () => {
+            setCurrentView('overview');
+            setSelectedItem(null);
+            window.history.pushState({ view: 'overview' }, '', '#');
+          };
+
+          // 初始化示例數據
+          const [inventory, setInventory] = useState(() => {
+            try {
+              const saved = localStorage.getItem('inventory');
+              return saved ? JSON.parse(saved) : [
+                {
+                  id: 1,
+                  name: '手機架(小)',
+                  stock: 297,
+                  location: '20F大會議室\n22F倉庫*1箱',
+                  category: '手機周邊',
+                  specifications: '塑膠材質、可調角度',
+                  unitPrice: 150,
+                  records: [
+                    { date: '2024-01-15', type: 'in', quantity: 300, note: '新進貨', operator: '管理員' },
+                    { date: '2024-01-20', type: 'out', quantity: 3, note: '活動使用', operator: '小王' }
+                  ]
+                },
+                {
+                  id: 2,
+                  name: '桌上型手機架(大)',
+                  stock: 79,
+                  location: '20F大會議室 倉庫',
+                  category: '手機周邊',
+                  specifications: '鋁合金材質、重量級底座',
+                  unitPrice: 280,
+                  records: [
+                    { date: '2024-01-10', type: 'in', quantity: 100, note: '採購進貨', operator: '管理員' },
+                    { date: '2024-01-25', type: 'out', quantity: 21, note: '部門申請', operator: '小李' }
+                  ]
+                },
+                {
+                  id: 3,
+                  name: '竹製面紙盒',
+                  stock: 99,
+                  location: '20F大會議室 櫃子*(3有搶把)\n22F倉庫 櫃子*1*(有搶把) &9個\n提把+紅色提袋',
+                  category: '辦公用品',
+                  specifications: '天然竹材、環保材質',
+                  unitPrice: 120,
+                  records: [
+                    { date: '2024-01-05', type: 'in', quantity: 120, note: '廠商供貨', operator: '管理員' },
+                    { date: '2024-01-18', type: 'out', quantity: 21, note: '會議室使用', operator: '小陳' }
+                  ]
+                },
+                {
+                  id: 4,
+                  name: '太陽水晶',
+                  stock: 122,
+                  location: '22F倉庫',
+                  category: '紀念品',
+                  specifications: '水晶材質、10cm×8cm',
+                  unitPrice: 350,
+                  records: [
+                    { date: '2024-01-08', type: 'in', quantity: 150, note: '供應商進貨', operator: '管理員' },
+                    { date: '2024-01-22', type: 'out', quantity: 28, note: '贈品發放', operator: '小美' }
+                  ]
+                },
+                {
+                  id: 5,
+                  name: '手持吸塵器',
+                  stock: 6,
+                  location: '20F大會議室 抽櫃',
+                  category: '家電用品',
+                  specifications: '無線充電、HEPA濾網',
+                  unitPrice: 1200,
+                  records: [
+                    { date: '2024-01-12', type: 'in', quantity: 10, note: '新品採購', operator: '管理員' },
+                    { date: '2024-01-28', type: 'out', quantity: 4, note: '員工福利', operator: '小張' }
+                  ]
+                }
+              ];
+            } catch (error) {
+              console.error('載入庫存數據失敗:', error);
+              return [];
+            }
+          });
+
+          // 保存到 localStorage
+          useEffect(() => {
+            try {
+              localStorage.setItem('inventory', JSON.stringify(inventory));
+            } catch (error) {
+              console.error('保存數據失敗:', error);
+            }
+          }, [inventory]);
+
+          const checkAdminPassword = () => {
+            if (adminPassword === 'admin123') {
+              setIsAdmin(true);
+              setShowPasswordModal(false);
+              setAdminPassword('');
+            } else {
+              alert('密碼錯誤！');
+            }
+          };
+
+          const addRecord = (itemId, record) => {
+            setInventory(prev => prev.map(item => {
+              if (item.id === itemId) {
+                const newStock = record.type === 'in' 
+                  ? item.stock + record.quantity 
+                  : item.stock - record.quantity;
+                return {
+                  ...item,
+                  stock: Math.max(0, newStock),
+                  records: [...item.records, { 
+                    ...record, 
+                    date: new Date().toISOString().split('T')[0]
+                  }]
+                };
+              }
+              return item;
+            }));
+          };
+
+          const updateItem = (itemId, updates) => {
+            setInventory(prev => prev.map(item => 
+              item.id === itemId ? { ...item, ...updates } : item
+            ));
+          };
+
+          // 保存操作人員列表
+          useEffect(() => {
+            localStorage.setItem('operators', JSON.stringify(operators));
+          }, [operators]);
+
+          // 篩選邏輯
+          const filteredInventory = inventory.filter(item => {
+            const matchesCategory = !filterCategory || item.category === filterCategory;
+            return matchesCategory;
+          });
+
+          const deleteRecord = (itemId, recordIndex) => {
+            if (!isAdmin) return;
+            setInventory(prev => prev.map(item => {
+              if (item.id === itemId) {
+                const newRecords = item.records.filter((_, index) => index !== recordIndex);
+                let newStock = 0;
+                newRecords.forEach(record => {
+                  if (record.type === 'in') {
+                    newStock += record.quantity;
+                  } else {
+                    newStock -= record.quantity;
+                  }
+                });
+                return { ...item, records: newRecords, stock: Math.max(0, newStock) };
+              }
+              return item;
+            }));
+          };
+
+          // 總覽頁面
+          const OverviewPage = () => (
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
+                  <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className={`px-3 py-2 rounded-lg text-sm ${isAdmin ? 'bg-green-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                  >
+                    {isAdmin ? '管理模式' : '管理登入'}
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsAdmin(false)}
+                      className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                    >
+                      登出
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 類別篩選 */}
+              <div className="mb-6">
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">全部類別</option>
+                  {[...new Set(inventory.map(item => item.category))].map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 緊湊卡片網格 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {filteredInventory.map(item => (
+                  <div 
+                    key={item.id} 
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group"
+                    onClick={() => navigateToDetail(item)}
+                  >
+                    {/* 圖片區域 - 更小更緊湊 */}
+                    <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
+                      <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                      {/* 類別標籤在上方 */}
+                      <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium max-w-20 truncate">
+                        {item.category}
+                      </div>
+                    </div>
+                    
+                    {/* 內容區域 - 極簡設計 */}
+                    <div className="p-3">
+                      <h3 className="font-semibold text-sm text-gray-800 mb-2 line-clamp-2 leading-tight">
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        {/* 庫存數量在下方左側 */}
+                        <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                          item.stock < 10 
+                            ? 'bg-red-500 text-white' 
+                            : item.stock < 50 
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-green-500 text-white'
+                        }`}>
+                          {item.stock}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-400">
+                          📍 {item.location.split('\n')[0].slice(0, 8)}...
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+
+          // 詳細頁面
+          const DetailPage = () => {
+            const [recordForm, setRecordForm] = useState({
+              type: 'out',
+              quantity: '',
+              note: '',
+              operator: ''
+            });
+            const [showOperatorModal, setShowOperatorModal] = useState(false);
+
+            const handleSubmitRecord = () => {
+              if (!recordForm.quantity || !recordForm.operator) {
+                alert('請填寫完整資訊');
+                return;
+              }
+              addRecord(selectedItem.id, {
+                ...recordForm,
+                quantity: parseInt(recordForm.quantity)
+              });
+              setRecordForm({ type: 'out', quantity: '', note: '', operator: '' });
+            };
+
+            return (
+              <div className="p-6 max-w-4xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <button
+                    onClick={navigateToOverview}
+                    className="text-blue-500 hover:text-blue-700 flex items-center gap-2"
+                  >
+                    ← 返回總覽
+                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setEditingItem(selectedItem)}
+                      className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
+                    >
+                      <Edit3 size={16} />
+                      編輯商品
+                    </button>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                        <Package size={120} className="text-gray-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-bold mb-4">{selectedItem.name}</h1>
+                      <div className="space-y-3">
+                        <div>
+                          <span className="font-semibold text-gray-700">目前庫存：</span>
+                          <span className={`text-4xl font-bold ml-3 ${selectedItem.stock < 10 ? 'text-red-500' : selectedItem.stock < 50 ? 'text-yellow-500' : 'text-green-600'}`}>
+                            {selectedItem.stock}
+                          </span>
+                          <span className="text-lg text-gray-500 ml-2">件</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">類別：</span>
+                          <span className="ml-2 text-gray-600">{selectedItem.category}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">存放位置：</span>
+                          <p className="mt-1 whitespace-pre-line text-gray-600">{selectedItem.location}</p>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">規格：</span>
+                          <span className="ml-2 text-gray-600">{selectedItem.specifications || '未設定'}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-700">單價：</span>
+                          <span className="ml-2 text-gray-600">NT$ {selectedItem.unitPrice || '未設定'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 新增記錄表單 */}
+                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Plus size={20} />
+                    新增出入庫記錄
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">操作類型</label>
+                        <select
+                          value={recordForm.type}
+                          onChange={(e) => setRecordForm({...recordForm, type: e.target.value})}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="out">出庫</option>
+                          <option value="in">入庫</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">數量</label>
+                        <input
+                          type="number"
+                          value={recordForm.quantity}
+                          onChange={(e) => setRecordForm({...recordForm, quantity: e.target.value})}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="請輸入數量"
+                          min="1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">操作人員</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={recordForm.operator}
+                          onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">請選擇操作人員</option>
+                          {operators.map(op => (
+                            <option key={op} value={op}>{op}</option>
+                          ))}
+                        </select>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setShowOperatorModal(true)}
+                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                          >
+                            管理
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                      <textarea
+                        value={recordForm.note}
+                        onChange={(e) => setRecordForm({...recordForm, note: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入您的姓名"
+                        placeholder="請輸入備註（選填）"
+                        rows="3"
                       />
                     </div>
+                    <button
+                      onClick={handleSubmitRecord}
+                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      提交記錄
+                    </button>
+                  </div>
+                </div>
+
+                {/* 歷史記錄 */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <FileText size={20} />
+                    出入庫歷史記錄
+                  </h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">日期</th>
+                          <th className="text-left py-2">類型</th>
+                          <th className="text-left py-2">數量</th>
+                          <th className="text-left py-2">操作人員</th>
+                          <th className="text-left py-2">備註</th>
+                          {isAdmin && <th className="text-left py-2">操作</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedItem.records
+                          .sort((a, b) => new Date(b.date) - new Date(a.date))
+                          .map((record, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="py-2">{record.date}</td>
+                            <td className="py-2">
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                record.type === 'in' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {record.type === 'in' ? '入庫' : '出庫'}
+                              </span>
+                            </td>
+                            <td className="py-2">{record.quantity}</td>
+                            <td className="py-2">{record.operator}</td>
+                            <td className="py-2">{record.note || '-'}</td>
+                            {isAdmin && (
+                              <td className="py-2">
+                                <button
+                                  onClick={() => deleteRecord(selectedItem.id, selectedItem.records.length - 1 - index)}
+                                  className="text-red-500 hover:text-red-700 text-xs"
+                                >
+                                  刪除
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* 操作人員管理模態框 */}
+                {showOperatorModal && <OperatorModal />}
+              </div>
+            );
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
                       <textarea
@@ -608,6 +1188,75 @@
                       取消
                     </button>
                   </div>
+                </div>
+              </div>
+            );
+          };
+
+          // 操作人員管理模態框
+          const OperatorModal = () => {
+            const [newOperator, setNewOperator] = useState('');
+
+            const addOperator = () => {
+              if (newOperator.trim() && !operators.includes(newOperator.trim())) {
+                setOperators([...operators, newOperator.trim()]);
+                setNewOperator('');
+              }
+            };
+
+            const removeOperator = (operatorToRemove) => {
+              setOperators(operators.filter(op => op !== operatorToRemove));
+            };
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">管理操作人員</h2>
+                    <button onClick={() => setShowOperatorModal(false)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newOperator}
+                        onChange={(e) => setNewOperator(e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="新增操作人員"
+                        onKeyPress={(e) => e.key === 'Enter' && addOperator()}
+                      />
+                      <button
+                        onClick={addOperator}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      >
+                        新增
+                      </button>
+                    </div>
+                    
+                    <div className="max-h-40 overflow-y-auto">
+                      {operators.map(operator => (
+                        <div key={operator} className="flex justify-between items-center py-2 border-b">
+                          <span>{operator}</span>
+                          <button
+                            onClick={() => removeOperator(operator)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            刪除
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowOperatorModal(false)}
+                    className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    完成
+                  </button>
                 </div>
               </div>
             );
