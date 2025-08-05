@@ -8,6 +8,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     <style>
         body { 
             margin: 0; 
@@ -37,6 +38,13 @@
     
     <script type="text/babel">
         const { useState, useEffect } = React;
+        
+        // 🔧 請在這裡填入您的 Supabase 設定
+        const SUPABASE_URL = 'https://sfgvmpsmdyogrdtoar.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ3ZtcHNtbmR5b2dxcmR0b2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNTU2OTEsImV4cCI6MjA2OTkzMTY5MX0.uCWRlPtiYqR-_7jWdQd9RzaBk0SHzRn_0dWbWG0M-J0';
+        
+        // 初始化 Supabase 客戶端
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // 圖示組件
         const Package = ({ size = 24, className = "" }) => (
@@ -83,6 +91,8 @@
           const [showPasswordModal, setShowPasswordModal] = useState(false);
           const [editingItem, setEditingItem] = useState(null);
           const [filterCategory, setFilterCategory] = useState('');
+          const [inventory, setInventory] = useState([]);
+          const [loading, setLoading] = useState(true);
           const [operators, setOperators] = useState(() => {
             try {
               const saved = localStorage.getItem('operators');
@@ -91,92 +101,6 @@
               return ['小王', '小李', '小陳', '小美', '小張'];
             }
           });
-
-          // 初始化示例數據
-          const [inventory, setInventory] = useState(() => {
-            try {
-              const saved = localStorage.getItem('inventory');
-              return saved ? JSON.parse(saved) : [
-                {
-                  id: 1,
-                  name: '手機架(小)',
-                  stock: 297,
-                  location: '20F大會議室\n22F倉庫*1箱',
-                  category: '手機周邊',
-                  specifications: '塑膠材質、可調角度',
-                  unitPrice: 150,
-                  records: [
-                    { date: '2024-01-15', type: 'in', quantity: 300, note: '新進貨', operator: '管理員' },
-                    { date: '2024-01-20', type: 'out', quantity: 3, note: '活動使用', operator: '小王' }
-                  ]
-                },
-                {
-                  id: 2,
-                  name: '桌上型手機架(大)',
-                  stock: 79,
-                  location: '20F大會議室 倉庫',
-                  category: '手機周邊',
-                  specifications: '鋁合金材質、重量級底座',
-                  unitPrice: 280,
-                  records: [
-                    { date: '2024-01-10', type: 'in', quantity: 100, note: '採購進貨', operator: '管理員' },
-                    { date: '2024-01-25', type: 'out', quantity: 21, note: '部門申請', operator: '小李' }
-                  ]
-                },
-                {
-                  id: 3,
-                  name: '竹製面紙盒',
-                  stock: 99,
-                  location: '20F大會議室 櫃子*(3有搶把)\n22F倉庫 櫃子*1*(有搶把) &9個\n提把+紅色提袋',
-                  category: '辦公用品',
-                  specifications: '天然竹材、環保材質',
-                  unitPrice: 120,
-                  records: [
-                    { date: '2024-01-05', type: 'in', quantity: 120, note: '廠商供貨', operator: '管理員' },
-                    { date: '2024-01-18', type: 'out', quantity: 21, note: '會議室使用', operator: '小陳' }
-                  ]
-                },
-                {
-                  id: 4,
-                  name: '太陽水晶',
-                  stock: 122,
-                  location: '22F倉庫',
-                  category: '紀念品',
-                  specifications: '水晶材質、10cm×8cm',
-                  unitPrice: 350,
-                  records: [
-                    { date: '2024-01-08', type: 'in', quantity: 150, note: '供應商進貨', operator: '管理員' },
-                    { date: '2024-01-22', type: 'out', quantity: 28, note: '贈品發放', operator: '小美' }
-                  ]
-                },
-                {
-                  id: 5,
-                  name: '手持吸塵器',
-                  stock: 6,
-                  location: '20F大會議室 抽櫃',
-                  category: '家電用品',
-                  specifications: '無線充電、HEPA濾網',
-                  unitPrice: 1200,
-                  records: [
-                    { date: '2024-01-12', type: 'in', quantity: 10, note: '新品採購', operator: '管理員' },
-                    { date: '2024-01-28', type: 'out', quantity: 4, note: '員工福利', operator: '小張' }
-                  ]
-                }
-              ];
-            } catch (error) {
-              console.error('載入庫存數據失敗:', error);
-              return [];
-            }
-          });
-
-          // 保存到 localStorage
-          useEffect(() => {
-            try {
-              localStorage.setItem('inventory', JSON.stringify(inventory));
-            } catch (error) {
-              console.error('保存數據失敗:', error);
-            }
-          }, [inventory]);
 
           // 保存操作人員列表
           useEffect(() => {
@@ -202,6 +126,56 @@
             };
           }, [currentView]);
 
+          // 🔄 從 Supabase 載入庫存資料
+          const loadInventory = async () => {
+            try {
+              setLoading(true);
+              const { data, error } = await supabase
+                .from('inventory')
+                .select('*')
+                .order('id', { ascending: true });
+              
+              if (error) {
+                console.error('載入庫存失敗:', error);
+                alert('載入資料失敗，請檢查網路連線');
+                return;
+              }
+              
+              setInventory(data || []);
+            } catch (error) {
+              console.error('載入庫存錯誤:', error);
+              alert('連線失敗，請稍後再試');
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          // 🔄 載入指定商品的記錄
+          const loadItemRecords = async (itemId) => {
+            try {
+              const { data, error } = await supabase
+                .from('records')
+                .select('*')
+                .eq('item_id', itemId)
+                .order('operation_date', { ascending: false });
+              
+              if (error) {
+                console.error('載入記錄失敗:', error);
+                return [];
+              }
+              
+              return data || [];
+            } catch (error) {
+              console.error('載入記錄錯誤:', error);
+              return [];
+            }
+          };
+
+          // 🚀 初始載入資料
+          useEffect(() => {
+            loadInventory();
+          }, []);
+
           // 篩選邏輯
           const filteredInventory = inventory.filter(item => {
             const matchesCategory = !filterCategory || item.category === filterCategory;
@@ -209,9 +183,13 @@
           });
 
           // 修改導航函數以支援瀏覽器歷史
-          const navigateToDetail = (item) => {
-            setSelectedItem(item);
+          const navigateToDetail = async (item) => {
+            setLoading(true);
+            const records = await loadItemRecords(item.id);
+            const itemWithRecords = { ...item, records };
+            setSelectedItem(itemWithRecords);
             setCurrentView('detail');
+            setLoading(false);
             window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
           };
 
@@ -231,48 +209,169 @@
             }
           };
 
-          const addRecord = (itemId, record) => {
-            setInventory(prev => prev.map(item => {
-              if (item.id === itemId) {
-                const newStock = record.type === 'in' 
-                  ? item.stock + record.quantity 
-                  : item.stock - record.quantity;
-                return {
-                  ...item,
-                  stock: Math.max(0, newStock),
-                  records: [...item.records, { 
-                    ...record, 
-                    date: new Date().toISOString().split('T')[0]
-                  }]
-                };
-              }
-              return item;
-            }));
-          };
-
-          const updateItem = (itemId, updates) => {
-            setInventory(prev => prev.map(item => 
-              item.id === itemId ? { ...item, ...updates } : item
-            ));
-          };
-
-          const deleteRecord = (itemId, recordIndex) => {
-            if (!isAdmin) return;
-            setInventory(prev => prev.map(item => {
-              if (item.id === itemId) {
-                const newRecords = item.records.filter((_, index) => index !== recordIndex);
-                let newStock = 0;
-                newRecords.forEach(record => {
-                  if (record.type === 'in') {
-                    newStock += record.quantity;
-                  } else {
-                    newStock -= record.quantity;
-                  }
+          // 📝 新增出入庫記錄
+          const addRecord = async (itemId, record) => {
+            try {
+              // 1. 新增記錄到 records 表
+              const { error: recordError } = await supabase
+                .from('records')
+                .insert({
+                  item_id: itemId,
+                  type: record.type,
+                  quantity: record.quantity,
+                  operator: record.operator,
+                  note: record.note || '',
+                  operation_date: new Date().toISOString()
                 });
-                return { ...item, records: newRecords, stock: Math.max(0, newStock) };
+
+              if (recordError) {
+                console.error('新增記錄失敗:', recordError);
+                alert('新增記錄失敗');
+                return;
               }
-              return item;
-            }));
+
+              // 2. 更新庫存數量
+              const currentItem = inventory.find(item => item.id === itemId);
+              const newStock = record.type === 'in' 
+                ? currentItem.stock + record.quantity 
+                : Math.max(0, currentItem.stock - record.quantity);
+
+              const { error: updateError } = await supabase
+                .from('inventory')
+                .update({ stock: newStock })
+                .eq('id', itemId);
+
+              if (updateError) {
+                console.error('更新庫存失敗:', updateError);
+                alert('更新庫存失敗');
+                return;
+              }
+
+              // 3. 更新本地狀態
+              setInventory(prev => prev.map(item => 
+                item.id === itemId ? { ...item, stock: newStock } : item
+              ));
+
+              // 4. 重新載入詳細頁面資料
+              if (selectedItem && selectedItem.id === itemId) {
+                const records = await loadItemRecords(itemId);
+                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
+              }
+
+              alert('記錄新增成功！');
+            } catch (error) {
+              console.error('新增記錄錯誤:', error);
+              alert('操作失敗，請稍後再試');
+            }
+          };
+
+          // ✏️ 更新商品資訊
+          const updateItem = async (itemId, updates) => {
+            try {
+              const { error } = await supabase
+                .from('inventory')
+                .update(updates)
+                .eq('id', itemId);
+
+              if (error) {
+                console.error('更新商品失敗:', error);
+                alert('更新失敗');
+                return;
+              }
+
+              // 更新本地狀態
+              setInventory(prev => prev.map(item => 
+                item.id === itemId ? { ...item, ...updates } : item
+              ));
+
+              if (selectedItem && selectedItem.id === itemId) {
+                setSelectedItem(prev => ({ ...prev, ...updates }));
+              }
+
+              alert('更新成功！');
+            } catch (error) {
+              console.error('更新商品錯誤:', error);
+              alert('操作失敗，請稍後再試');
+            }
+          };
+
+          // 🗑️ 刪除記錄
+          const deleteRecord = async (itemId, recordId) => {
+            if (!isAdmin) return;
+            
+            if (!confirm('確定要刪除這筆記錄嗎？')) return;
+
+            try {
+              const { error } = await supabase
+                .from('records')
+                .delete()
+                .eq('id', recordId);
+
+              if (error) {
+                console.error('刪除記錄失敗:', error);
+                alert('刪除失敗');
+                return;
+              }
+
+              // 重新計算庫存
+              await recalculateStock(itemId);
+              
+              // 重新載入記錄
+              if (selectedItem && selectedItem.id === itemId) {
+                const records = await loadItemRecords(itemId);
+                const updatedItem = inventory.find(item => item.id === itemId);
+                setSelectedItem({ ...updatedItem, records });
+              }
+
+              alert('刪除成功！');
+            } catch (error) {
+              console.error('刪除記錄錯誤:', error);
+              alert('操作失敗，請稍後再試');
+            }
+          };
+
+          // 🔢 重新計算庫存
+          const recalculateStock = async (itemId) => {
+            try {
+              const { data: records, error } = await supabase
+                .from('records')
+                .select('type, quantity')
+                .eq('item_id', itemId);
+
+              if (error) {
+                console.error('載入記錄失敗:', error);
+                return;
+              }
+
+              let newStock = 0;
+              records.forEach(record => {
+                if (record.type === 'in') {
+                  newStock += record.quantity;
+                } else {
+                  newStock -= record.quantity;
+                }
+              });
+
+              newStock = Math.max(0, newStock);
+
+              const { error: updateError } = await supabase
+                .from('inventory')
+                .update({ stock: newStock })
+                .eq('id', itemId);
+
+              if (updateError) {
+                console.error('更新庫存失敗:', updateError);
+                return;
+              }
+
+              // 更新本地狀態
+              setInventory(prev => prev.map(item => 
+                item.id === itemId ? { ...item, stock: newStock } : item
+              ));
+
+            } catch (error) {
+              console.error('重新計算庫存錯誤:', error);
+            }
           };
 
           // 總覽頁面
@@ -349,13 +448,20 @@
                           {item.stock}
                         </div>
                         <div className="flex items-center text-xs text-gray-400">
-                          📍 {item.location.split('\n')[0].slice(0, 8)}...
+                          📍 {item.location ? item.location.split('\n')[0].slice(0, 8) + '...' : '未設定'}
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {filteredInventory.length === 0 && !loading && (
+                <div className="text-center py-12">
+                  <Package size={64} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">暫無商品資料</p>
+                </div>
+              )}
             </div>
           );
 
@@ -490,11 +596,11 @@
                         </div>
                         <div>
                           <span className="font-semibold text-gray-700">類別：</span>
-                          <span className="ml-2 text-gray-600">{selectedItem.category}</span>
+                          <span className="ml-2 text-gray-600">{selectedItem.category || '未設定'}</span>
                         </div>
                         <div>
                           <span className="font-semibold text-gray-700">存放位置：</span>
-                          <p className="mt-1 whitespace-pre-line text-gray-600">{selectedItem.location}</p>
+                          <p className="mt-1 whitespace-pre-line text-gray-600">{selectedItem.location || '未設定'}</p>
                         </div>
                         <div>
                           <span className="font-semibold text-gray-700">規格：</span>
@@ -502,7 +608,7 @@
                         </div>
                         <div>
                           <span className="font-semibold text-gray-700">單價：</span>
-                          <span className="ml-2 text-gray-600">NT$ {selectedItem.unitPrice || '未設定'}</span>
+                          <span className="ml-2 text-gray-600">NT$ {selectedItem.unit_price || '未設定'}</span>
                         </div>
                       </div>
                     </div>
@@ -592,7 +698,7 @@
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2">日期</th>
+                          <th className="text-left py-2">日期時間</th>
                           <th className="text-left py-2">類型</th>
                           <th className="text-left py-2">數量</th>
                           <th className="text-left py-2">操作人員</th>
@@ -601,35 +707,43 @@
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedItem.records
-                          .sort((a, b) => new Date(b.date) - new Date(a.date))
-                          .map((record, index) => (
-                          <tr key={index} className="border-b hover:bg-gray-50">
-                            <td className="py-2">{record.date}</td>
-                            <td className="py-2">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                record.type === 'in' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {record.type === 'in' ? '入庫' : '出庫'}
-                              </span>
-                            </td>
-                            <td className="py-2">{record.quantity}</td>
-                            <td className="py-2">{record.operator}</td>
-                            <td className="py-2">{record.note || '-'}</td>
-                            {isAdmin && (
+                        {selectedItem.records && selectedItem.records.length > 0 ? (
+                          selectedItem.records.map((record, index) => (
+                            <tr key={record.id || index} className="border-b hover:bg-gray-50">
                               <td className="py-2">
-                                <button
-                                  onClick={() => deleteRecord(selectedItem.id, selectedItem.records.length - 1 - index)}
-                                  className="text-red-500 hover:text-red-700 text-xs"
-                                >
-                                  刪除
-                                </button>
+                                {new Date(record.operation_date).toLocaleString('zh-TW')}
                               </td>
-                            )}
+                              <td className="py-2">
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  record.type === 'in' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {record.type === 'in' ? '入庫' : '出庫'}
+                                </span>
+                              </td>
+                              <td className="py-2">{record.quantity}</td>
+                              <td className="py-2">{record.operator}</td>
+                              <td className="py-2">{record.note || '-'}</td>
+                              {isAdmin && (
+                                <td className="py-2">
+                                  <button
+                                    onClick={() => deleteRecord(selectedItem.id, record.id)}
+                                    className="text-red-500 hover:text-red-700 text-xs"
+                                  >
+                                    刪除
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={isAdmin ? 6 : 5} className="py-8 text-center text-gray-500">
+                              暫無出入庫記錄
+                            </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -648,15 +762,15 @@
               location: editingItem?.location || '',
               category: editingItem?.category || '',
               specifications: editingItem?.specifications || '',
-              unitPrice: editingItem?.unitPrice || ''
+              unit_price: editingItem?.unit_price || ''
             });
 
             const handleSave = () => {
-              updateItem(editingItem.id, editForm);
+              updateItem(editingItem.id, {
+                ...editForm,
+                unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
+              });
               setEditingItem(null);
-              if (selectedItem?.id === editingItem.id) {
-                setSelectedItem({...selectedItem, ...editForm});
-              }
             };
 
             return (
@@ -709,8 +823,8 @@
                       <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
                       <input
                         type="number"
-                        value={editForm.unitPrice}
-                        onChange={(e) => setEditForm({...editForm, unitPrice: parseInt(e.target.value) || ''})}
+                        value={editForm.unit_price}
+                        onChange={(e) => setEditForm({...editForm, unit_price: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入單價"
                       />
@@ -771,6 +885,18 @@
             </div>
           );
 
+          // 載入中畫面
+          if (loading) {
+            return (
+              <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">載入中...</p>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div className="min-h-screen bg-gray-50">
               {currentView === 'overview' && <OverviewPage />}
@@ -786,7 +912,7 @@
           ReactDOM.render(<InventoryManager />, document.getElementById('root'));
         } catch (error) {
           console.error('渲染失敗:', error);
-          document.getElementById('root').innerHTML = '<div style="padding: 20px; text-align: center; color: red;">載入失敗，請檢查瀏覽器控制台錯誤訊息</div>';
+          document.getElementById('root').innerHTML = '<div style="padding: 20px; text-align: center; color: red;">載入失敗，請檢查瀏覽器控制台錯誤訊息並確認 Supabase 設定正確</div>';
         }
     </script>
 </body>
