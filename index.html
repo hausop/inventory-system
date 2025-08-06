@@ -40,8 +40,8 @@
         const { useState, useEffect } = React;
         
         // 🔧 請在這裡填入您的 Supabase 設定
-        const SUPABASE_URL = 'https://sfgvmpsmndyogqrdtoar.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ3ZtcHNtbmR5b2dxcmR0b2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNTU2OTEsImV4cCI6MjA2OTkzMTY5MX0.uCWRlPtiYqR-_7jWdQd9RzaBk0SHzRn_0dWbWG0M-J0';
+        const SUPABASE_URL = 'https://sfgvmpsmdyogrdtoar.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ3ZtcHNtZHlvZ3JkdG9hciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzMzNDM1OTIwLCJleHAiOjIwNDkwMTE5MjB9.QWBu2HPPMy9jt5uXRy-QOAQjqhC13h5UpU06HvPu_lo';
         
         // 初始化 Supabase 客戶端
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -83,6 +83,13 @@
             </svg>
         );
 
+        const Settings = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        );
+
         const InventoryManager = () => {
           const [currentView, setCurrentView] = useState('overview');
           const [selectedItem, setSelectedItem] = useState(null);
@@ -90,6 +97,7 @@
           const [adminPassword, setAdminPassword] = useState('');
           const [showPasswordModal, setShowPasswordModal] = useState(false);
           const [editingItem, setEditingItem] = useState(null);
+          const [showAddItemModal, setShowAddItemModal] = useState(false);
           const [filterCategory, setFilterCategory] = useState('');
           const [inventory, setInventory] = useState([]);
           const [loading, setLoading] = useState(true);
@@ -126,7 +134,7 @@
             };
           }, [currentView]);
 
-          // 🔄 從 Supabase 載入庫存資料
+          // 從 Supabase 載入庫存資料
           const loadInventory = async () => {
             try {
               setLoading(true);
@@ -150,7 +158,7 @@
             }
           };
 
-          // 🔄 載入指定商品的記錄
+          // 載入指定商品的記錄
           const loadItemRecords = async (itemId) => {
             try {
               const { data, error } = await supabase
@@ -171,7 +179,7 @@
             }
           };
 
-          // 🚀 初始載入資料
+          // 初始載入資料
           useEffect(() => {
             loadInventory();
           }, []);
@@ -182,7 +190,7 @@
             return matchesCategory;
           });
 
-          // 修改導航函數以支援瀏覽器歷史
+          // 導航函數
           const navigateToDetail = async (item) => {
             setLoading(true);
             const records = await loadItemRecords(item.id);
@@ -209,7 +217,88 @@
             }
           };
 
-          // 📝 新增出入庫記錄
+          // 新增商品
+          const addNewItem = async (itemData) => {
+            try {
+              const { data, error } = await supabase
+                .from('inventory')
+                .insert({
+                  name: itemData.name,
+                  stock: parseInt(itemData.stock) || 0,
+                  location: itemData.location,
+                  category: itemData.category,
+                  specifications: itemData.specifications,
+                  unit_price: parseInt(itemData.unit_price) || null
+                })
+                .select()
+                .single();
+
+              if (error) {
+                console.error('新增商品失敗:', error);
+                alert('新增失敗: ' + error.message);
+                return false;
+              }
+
+              // 如果有初始庫存，新增一筆入庫記錄
+              if (itemData.stock > 0) {
+                await supabase
+                  .from('records')
+                  .insert({
+                    item_id: data.id,
+                    type: 'in',
+                    quantity: parseInt(itemData.stock),
+                    operator: '系統',
+                    note: '商品初始庫存',
+                    operation_date: new Date().toISOString()
+                  });
+              }
+
+              await loadInventory();
+              alert('商品新增成功！');
+              return true;
+            } catch (error) {
+              console.error('新增商品錯誤:', error);
+              alert('操作失敗，請稍後再試');
+              return false;
+            }
+          };
+
+          // 刪除商品
+          const deleteItem = async (itemId) => {
+            if (!confirm('確定要刪除這個商品嗎？相關的出入庫記錄也會一併刪除。')) {
+              return;
+            }
+
+            try {
+              // 先刪除相關記錄
+              await supabase.from('records').delete().eq('item_id', itemId);
+              
+              // 再刪除商品
+              const { error } = await supabase
+                .from('inventory')
+                .delete()
+                .eq('id', itemId);
+
+              if (error) {
+                console.error('刪除商品失敗:', error);
+                alert('刪除失敗');
+                return;
+              }
+
+              await loadInventory();
+              alert('商品刪除成功！');
+              
+              // 如果正在查看被刪除的商品，回到總覽
+              if (selectedItem && selectedItem.id === itemId) {
+                navigateToOverview();
+              }
+            } catch (error) {
+              console.error('刪除商品錯誤:', error);
+              alert('操作失敗，請稍後再試');
+            }
+          };
+
+          // 新增出入庫記錄
           const addRecord = async (itemId, record) => {
             try {
               // 1. 新增記錄到 records 表
@@ -265,7 +354,66 @@
             }
           };
 
-          // ✏️ 更新商品資訊
+          // 庫存調整功能
+          const adjustStock = async (itemId, newStock, note = '') => {
+            try {
+              const currentItem = inventory.find(item => item.id === itemId);
+              const difference = newStock - currentItem.stock;
+              
+              if (difference === 0) {
+                alert('庫存數量沒有變化');
+                return;
+              }
+
+              // 新增調整記錄
+              const { error: recordError } = await supabase
+                .from('records')
+                .insert({
+                  item_id: itemId,
+                  type: difference > 0 ? 'in' : 'out',
+                  quantity: Math.abs(difference),
+                  operator: '管理員',
+                  note: note || `庫存調整：${currentItem.stock} → ${newStock}`,
+                  operation_date: new Date().toISOString()
+                });
+
+              if (recordError) {
+                console.error('新增調整記錄失敗:', recordError);
+                alert('調整失敗');
+                return;
+              }
+
+              // 更新庫存
+              const { error: updateError } = await supabase
+                .from('inventory')
+                .update({ stock: newStock })
+                .eq('id', itemId);
+
+              if (updateError) {
+                console.error('更新庫存失敗:', updateError);
+                alert('更新庫存失敗');
+                return;
+              }
+
+              // 更新本地狀態
+              setInventory(prev => prev.map(item => 
+                item.id === itemId ? { ...item, stock: newStock } : item
+              ));
+
+              // 重新載入詳細頁面資料
+              if (selectedItem && selectedItem.id === itemId) {
+                const records = await loadItemRecords(itemId);
+                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
+              }
+
+              alert('庫存調整成功！');
+            } catch (error) {
+              console.error('庫存調整錯誤:', error);
+              alert('操作失敗，請稍後再試');
+            }
+          };
+
+          // 更新商品資訊
           const updateItem = async (itemId, updates) => {
             try {
               const { error } = await supabase
@@ -295,13 +443,14 @@
             }
           };
 
-          // 🗑️ 刪除記錄
-          const deleteRecord = async (itemId, recordId) => {
+          // 刪除記錄（修正版）
+          const deleteRecord = async (itemId, recordId, recordData) => {
             if (!isAdmin) return;
             
-            if (!confirm('確定要刪除這筆記錄嗎？')) return;
+            if (!confirm('確定要刪除這筆記錄嗎？庫存數量會相應調整。')) return;
 
             try {
+              // 刪除記錄
               const { error } = await supabase
                 .from('records')
                 .delete()
@@ -313,64 +462,35 @@
                 return;
               }
 
-              // 重新計算庫存
-              await recalculateStock(itemId);
+              // 調整庫存（反向操作）
+              const currentItem = inventory.find(item => item.id === itemId);
+              const adjustment = recordData.type === 'in' 
+                ? -recordData.quantity  // 入庫記錄被刪除，要減少庫存
+                : +recordData.quantity; // 出庫記錄被刪除，要增加庫存
+                
+              const newStock = Math.max(0, currentItem.stock + adjustment);
+
+              // 更新庫存
+              await supabase
+                .from('inventory')
+                .update({ stock: newStock })
+                .eq('id', itemId);
+
+              // 更新本地狀態
+              setInventory(prev => prev.map(item => 
+                item.id === itemId ? { ...item, stock: newStock } : item
+              ));
               
               // 重新載入記錄
               if (selectedItem && selectedItem.id === itemId) {
                 const records = await loadItemRecords(itemId);
-                const updatedItem = inventory.find(item => item.id === itemId);
-                setSelectedItem({ ...updatedItem, records });
+                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
               }
 
               alert('刪除成功！');
             } catch (error) {
               console.error('刪除記錄錯誤:', error);
               alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 🔢 重新計算庫存
-          const recalculateStock = async (itemId) => {
-            try {
-              const { data: records, error } = await supabase
-                .from('records')
-                .select('type, quantity')
-                .eq('item_id', itemId);
-
-              if (error) {
-                console.error('載入記錄失敗:', error);
-                return;
-              }
-
-              let newStock = 0;
-              records.forEach(record => {
-                if (record.type === 'in') {
-                  newStock += record.quantity;
-                } else {
-                  newStock -= record.quantity;
-                }
-              });
-
-              newStock = Math.max(0, newStock);
-
-              const { error: updateError } = await supabase
-                .from('inventory')
-                .update({ stock: newStock })
-                .eq('id', itemId);
-
-              if (updateError) {
-                console.error('更新庫存失敗:', updateError);
-                return;
-              }
-
-              // 更新本地狀態
-              setInventory(prev => prev.map(item => 
-                item.id === itemId ? { ...item, stock: newStock } : item
-              ));
-
-            } catch (error) {
-              console.error('重新計算庫存錯誤:', error);
             }
           };
 
@@ -383,6 +503,15 @@
                   <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto justify-end">
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowAddItemModal(true)}
+                      className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      新增商品
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowPasswordModal(true)}
                     className={`px-3 py-2 rounded-lg text-sm ${isAdmin ? 'bg-green-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
@@ -419,36 +548,50 @@
                 {filteredInventory.map(item => (
                   <div 
                     key={item.id} 
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group"
-                    onClick={() => navigateToDetail(item)}
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group relative"
                   >
-                    {/* 圖片區域 */}
-                    <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
-                      <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
-                      {/* 類別標籤在上方 */}
-                      <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium max-w-20 truncate">
-                        {item.category}
-                      </div>
-                    </div>
-                    
-                    {/* 內容區域 */}
-                    <div className="p-3">
-                      <h3 className="font-semibold text-sm text-gray-800 mb-2 line-clamp-2 leading-tight">
-                        {item.name}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        {/* 庫存數量在下方左側 */}
-                        <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${
-                          item.stock < 10 
-                            ? 'bg-red-500 text-white' 
-                            : item.stock < 50 
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-green-500 text-white'
-                        }`}>
-                          {item.stock}
+                    {/* 管理員刪除按鈕 */}
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteItem(item.id);
+                        }}
+                        className="absolute top-1 left-1 z-10 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+
+                    <div onClick={() => navigateToDetail(item)}>
+                      {/* 圖片區域 */}
+                      <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
+                        <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        {/* 類別標籤在上方 */}
+                        <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium max-w-20 truncate">
+                          {item.category}
                         </div>
-                        <div className="flex items-center text-xs text-gray-400">
-                          📍 {item.location ? item.location.split('\n')[0].slice(0, 8) + '...' : '未設定'}
+                      </div>
+                      
+                      {/* 內容區域 */}
+                      <div className="p-3">
+                        <h3 className="font-semibold text-sm text-gray-800 mb-2 line-clamp-2 leading-tight">
+                          {item.name}
+                        </h3>
+                        <div className="flex items-center justify-between">
+                          {/* 庫存數量在下方左側 */}
+                          <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+                            item.stock < 10 
+                              ? 'bg-red-500 text-white' 
+                              : item.stock < 50 
+                              ? 'bg-yellow-500 text-white'
+                              : 'bg-green-500 text-white'
+                          }`}>
+                            {item.stock}
+                          </div>
+                          <div className="flex items-center text-xs text-gray-400">
+                            📍 {item.location ? item.location.split('\n')[0].slice(0, 8) + '...' : '未設定'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -460,6 +603,14 @@
                 <div className="text-center py-12">
                   <Package size={64} className="mx-auto text-gray-300 mb-4" />
                   <p className="text-gray-500">暫無商品資料</p>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowAddItemModal(true)}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      新增第一個商品
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -474,6 +625,7 @@
               operator: ''
             });
             const [showOperatorModal, setShowOperatorModal] = useState(false);
+            const [showStockAdjustModal, setShowStockAdjustModal] = useState(false);
 
             const handleSubmitRecord = () => {
               if (!recordForm.quantity || !recordForm.operator) {
@@ -485,6 +637,69 @@
                 quantity: parseInt(recordForm.quantity)
               });
               setRecordForm({ type: 'out', quantity: '', note: '', operator: '' });
+            };
+
+            // 庫存調整模態框
+            const StockAdjustModal = () => {
+              const [newStock, setNewStock] = useState(selectedItem.stock);
+              const [adjustNote, setAdjustNote] = useState('');
+
+              const handleAdjust = () => {
+                adjustStock(selectedItem.id, parseInt(newStock), adjustNote);
+                setShowStockAdjustModal(false);
+              };
+
+              return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-semibold">調整庫存</h2>
+                      <button onClick={() => setShowStockAdjustModal(false)}>
+                        <X size={20} />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">調整為</label>
+                        <input
+                          type="number"
+                          value={newStock}
+                          onChange={(e) => setNewStock(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          placeholder="請輸入新的庫存數量"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">調整原因</label>
+                        <textarea
+                          value={adjustNote}
+                          onChange={(e) => setAdjustNote(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          placeholder="請輸入調整原因（選填）"
+                          rows="3"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={handleAdjust}
+                        className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                      >
+                        確認調整
+                      </button>
+                      <button
+                        onClick={() => setShowStockAdjustModal(false)}
+                        className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
             };
 
             // 操作人員管理模態框
@@ -565,15 +780,26 @@
                   >
                     ← 返回總覽
                   </button>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setEditingItem(selectedItem)}
-                      className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2"
-                    >
-                      <Edit3 size={16} />
-                      編輯商品
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => setShowStockAdjustModal(true)}
+                          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center gap-2 text-sm"
+                        >
+                          <Settings size={16} />
+                          調整庫存
+                        </button>
+                        <button
+                          onClick={() => setEditingItem(selectedItem)}
+                          className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2 text-sm"
+                        >
+                          <Edit3 size={16} />
+                          編輯商品
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* 商品資訊 */}
@@ -728,7 +954,7 @@
                               {isAdmin && (
                                 <td className="py-2">
                                   <button
-                                    onClick={() => deleteRecord(selectedItem.id, record.id)}
+                                    onClick={() => deleteRecord(selectedItem.id, record.id, record)}
                                     className="text-red-500 hover:text-red-700 text-xs"
                                   >
                                     刪除
@@ -749,8 +975,133 @@
                   </div>
                 </div>
                 
-                {/* 操作人員管理模態框 */}
+                {/* 模態框 */}
                 {showOperatorModal && <OperatorModal />}
+                {showStockAdjustModal && <StockAdjustModal />}
+              </div>
+            );
+          };
+
+          // 新增商品模態框
+          const AddItemModal = () => {
+            const [itemForm, setItemForm] = useState({
+              name: '',
+              category: '',
+              location: '',
+              specifications: '',
+              unit_price: '',
+              stock: '0'
+            });
+
+            const handleAdd = async () => {
+              if (!itemForm.name.trim()) {
+                alert('請填寫商品名稱');
+                return;
+              }
+
+              const success = await addNewItem(itemForm);
+              if (success) {
+                setShowAddItemModal(false);
+                setItemForm({
+                  name: '',
+                  category: '',
+                  location: '',
+                  specifications: '',
+                  unit_price: '',
+                  stock: '0'
+                });
+              }
+            };
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">新增商品</h2>
+                    <button onClick={() => setShowAddItemModal(false)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱 *</label>
+                      <input
+                        type="text"
+                        value={itemForm.name}
+                        onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入商品名稱"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
+                      <input
+                        type="text"
+                        value={itemForm.category}
+                        onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入商品類別"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
+                      <textarea
+                        value={itemForm.location}
+                        onChange={(e) => setItemForm({...itemForm, location: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入存放位置"
+                        rows="3"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
+                      <input
+                        type="text"
+                        value={itemForm.specifications}
+                        onChange={(e) => setItemForm({...itemForm, specifications: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入商品規格"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
+                      <input
+                        type="number"
+                        value={itemForm.unit_price}
+                        onChange={(e) => setItemForm({...itemForm, unit_price: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入單價"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">初始庫存</label>
+                      <input
+                        type="number"
+                        value={itemForm.stock}
+                        onChange={(e) => setItemForm({...itemForm, stock: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="請輸入初始庫存數量"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-6">
+                    <button
+                      onClick={handleAdd}
+                      className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2"
+                    >
+                      <Plus size={16} />
+                      新增商品
+                    </button>
+                    <button
+                      onClick={() => setShowAddItemModal(false)}
+                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           };
@@ -903,6 +1254,7 @@
               {currentView === 'detail' && selectedItem && <DetailPage />}
               {showPasswordModal && <PasswordModal />}
               {editingItem && <EditModal />}
+              {showAddItemModal && <AddItemModal />}
             </div>
           );
         };
