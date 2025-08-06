@@ -184,6 +184,42 @@
             loadInventory();
           }, []);
 
+            // Realtime 監聽器 - 即時同步資料
+          useEffect(() => {
+            const inventorySubscription = supabase
+              .channel('inventory-changes')
+              .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'inventory' },
+                (payload) => {
+                  console.log('庫存變化:', payload);
+                  loadInventory(); // 重新載入庫存資料
+                }
+              )
+              .subscribe();
+
+            const recordsSubscription = supabase
+              .channel('records-changes')
+              .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'records' },
+                (payload) => {
+                  console.log('記錄變化:', payload);
+                  // 如果正在查看商品詳細頁，重新載入記錄
+                  if (selectedItem) {
+                    loadItemRecords(selectedItem.id).then(records => {
+                      setSelectedItem(prev => ({ ...prev, records }));
+                    });
+                  }
+                }
+             )
+             .subscribe();
+
+  // 清理函數
+  return () => {
+    inventorySubscription.unsubscribe();
+    recordsSubscription.unsubscribe();
+  };
+}, [selectedItem]);
+
           // 篩選邏輯
           const filteredInventory = inventory.filter(item => {
             const matchesCategory = !filterCategory || item.category === filterCategory;
