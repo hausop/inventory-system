@@ -576,6 +576,7 @@
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
                   className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ fontSize: '16px' }}
                 >
                   <option value="">全部類別</option>
                   {[...new Set(inventory.map(item => item.category))].map(category => (
@@ -711,6 +712,9 @@
                           placeholder="請輸入新的庫存數量"
                           min="0"
                           autoFocus
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          style={{ fontSize: '16px' }}
                         />
                       </div>
                       <div>
@@ -721,6 +725,7 @@
                           className="w-full border border-gray-300 rounded-lg px-3 py-2"
                           placeholder="請輸入調整原因（選填）"
                           rows="3"
+                          style={{ fontSize: '16px' }}
                         />
                       </div>
                     </div>
@@ -779,6 +784,7 @@
                           placeholder="新增操作人員"
                           onKeyPress={(e) => e.key === 'Enter' && addOperator()}
                           autoFocus
+                          style={{ fontSize: '16px' }}
                         />
                         <button
                           onClick={addOperator}
@@ -898,6 +904,7 @@
                           value={recordForm.type}
                           onChange={(e) => setRecordForm({...recordForm, type: e.target.value})}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          style={{ fontSize: '16px' }}
                         >
                           <option value="out">出庫</option>
                           <option value="in">入庫</option>
@@ -912,6 +919,9 @@
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="請輸入數量"
                           min="1"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          style={{ fontSize: '16px' }}
                         />
                       </div>
                     </div>
@@ -922,6 +932,7 @@
                           value={recordForm.operator}
                           onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
                           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          style={{ fontSize: '16px' }}
                         >
                           <option value="">請選擇操作人員</option>
                           {operators.map(op => (
@@ -946,6 +957,7 @@
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入備註（選填）"
                         rows="3"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <button
@@ -1075,6 +1087,7 @@
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品名稱"
                         autoFocus
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1085,6 +1098,7 @@
                         onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品類別"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1095,6 +1109,7 @@
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入存放位置"
                         rows="3"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1105,6 +1120,7 @@
                         onChange={(e) => setItemForm({...itemForm, specifications: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品規格"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1116,6 +1132,9 @@
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入單價"
                         min="0"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1127,6 +1146,9 @@
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入初始庫存數量"
                         min="0"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                   </div>
@@ -1186,6 +1208,7 @@
                         onChange={(e) => setEditForm({...editForm, name: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         autoFocus
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1195,6 +1218,7 @@
                         value={editForm.category}
                         onChange={(e) => setEditForm({...editForm, category: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1204,6 +1228,7 @@
                         onChange={(e) => setEditForm({...editForm, location: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         rows="3"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1213,6 +1238,7 @@
                         value={editForm.specifications}
                         onChange={(e) => setEditForm({...editForm, specifications: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
@@ -1223,6 +1249,9 @@
                         onChange={(e) => setEditForm({...editForm, unit_price: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入單價"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        style={{ fontSize: '16px' }}
                       />
                     </div>
                   </div>
@@ -1246,41 +1275,76 @@
             );
           };
 
-          // 密碼輸入模態框
-          const PasswordModal = () => (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-                <h2 className="text-xl font-semibold mb-4">管理員登入</h2>
-                <input
-                  type="password"
-                  placeholder="請輸入管理員密碼"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onKeyPress={(e) => e.key === 'Enter' && checkAdminPassword()}
-                  autoFocus
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={checkAdminPassword}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                  >
-                    登入
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowPasswordModal(false);
-                      setAdminPassword('');
-                    }}
-                    className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                  >
-                    取消
-                  </button>
+          // 密碼輸入模態框 - 使用 memo 優化避免重新渲染
+          const PasswordModal = memo(() => {
+            const [localPassword, setLocalPassword] = useState('');
+            const inputRef = useRef(null);
+
+            // 處理登入
+            const handleLogin = () => {
+              if (localPassword === 'admin123') {
+                setIsAdmin(true);
+                setShowPasswordModal(false);
+                setLocalPassword('');
+              } else {
+                alert('密碼錯誤！');
+              }
+            };
+
+            // 處理取消
+            const handleCancel = () => {
+              setShowPasswordModal(false);
+              setLocalPassword('');
+              setAdminPassword('');
+            };
+
+            // 自動聚焦
+            useEffect(() => {
+              if (inputRef.current) {
+                setTimeout(() => {
+                  inputRef.current.focus();
+                }, 100);
+              }
+            }, []);
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
+                  <h2 className="text-xl font-semibold mb-4">管理員登入</h2>
+                  <input
+                    ref={inputRef}
+                    type="password"
+                    placeholder="請輸入管理員密碼"
+                    value={localPassword}
+                    onChange={(e) => setLocalPassword(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    inputMode="text"
+                    style={{ fontSize: '16px' }}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleLogin}
+                      className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                    >
+                      登入
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                    >
+                      取消
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">提示：密碼是 admin123</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">提示：密碼是 admin123</p>
               </div>
-            </div>
-          );
+            );
+          });
 
           // 載入中畫面
           if (loading) {
@@ -1315,3 +1379,4 @@
     </script>
 </body>
 </html>
+                
