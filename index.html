@@ -1247,49 +1247,40 @@
           };
 
           // 密碼輸入模態框
-          const PasswordModal = () => {
-  const handleSubmit = (e) => {
-    e.preventDefault(); // 防止頁面刷新
-    checkAdminPassword();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-        <h2 className="text-xl font-semibold mb-4">管理員登入</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="password"
-            placeholder="請輸入管理員密碼"
-            value={adminPassword}
-            onChange={(e) => setAdminPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            inputMode="text"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-            >
-              登入
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowPasswordModal(false);
-                setAdminPassword('');
-              }}
-              className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-            >
-              取消
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">提示：密碼是 admin123</p>
-        </form>
-      </div>
-    </div>
-  );
-};
+          const PasswordModal = () => (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+                <h2 className="text-xl font-semibold mb-4">管理員登入</h2>
+                <input
+                  type="password"
+                  placeholder="請輸入管理員密碼"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onKeyPress={(e) => e.key === 'Enter' && checkAdminPassword()}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={checkAdminPassword}
+                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    登入
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setAdminPassword('');
+                    }}
+                    className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    取消
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">提示：密碼是 admin123</p>
+              </div>
+            </div>
+          );
 
           // 載入中畫面
           if (loading) {
