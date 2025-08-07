@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>禮品庫存管理系統</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -30,31 +30,9 @@
             overflow: hidden;
         }
         
-        /* 防止 iOS 上的輸入框縮放和失焦問題 */
-        input[type="text"],
-        input[type="number"],
-        input[type="password"],
-        textarea,
-        select {
-            font-size: 16px !important; /* 防止 iOS 自動縮放 */
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            -webkit-user-select: text;
-            user-select: text;
-        }
-        
-        /* 防止輸入時頁面跳動 */
-        .fixed {
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-        }
-        
-        /* 確保模態框輸入框不會失焦 */
-        .modal-input {
-            touch-action: manipulation;
+        /* 防止 iOS 上的輸入框縮放 - 關鍵設定 */
+        input, textarea, select {
+            font-size: 16px !important;
         }
     </style>
 </head>
@@ -64,7 +42,7 @@
     </div>
     
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+        const { useState, useEffect, useRef, useCallback, memo } = React;
         
         // 🔧 請在這裡填入您的 Supabase 設定
         const SUPABASE_URL = 'https://sfgvmpsmndyogqrdtoar.supabase.co';
@@ -72,28 +50,6 @@
         
         // 初始化 Supabase 客戶端
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // 自定義 Hook：防止輸入框失焦
-        const useStableInput = (initialValue = '') => {
-            const [value, setValue] = useState(initialValue);
-            const inputRef = useRef(null);
-            
-            // 使用 useCallback 確保函數引用穩定
-            const handleChange = useCallback((e) => {
-                const newValue = e.target.value;
-                const cursorPosition = e.target.selectionStart;
-                setValue(newValue);
-                
-                // 保持游標位置
-                requestAnimationFrame(() => {
-                    if (inputRef.current && inputRef.current === document.activeElement) {
-                        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
-                    }
-                });
-            }, []);
-            
-            return { value, onChange: handleChange, ref: inputRef };
-        };
         
         // 圖示組件
         const Package = ({ size = 24, className = "" }) => (
@@ -143,7 +99,7 @@
           const [currentView, setCurrentView] = useState('overview');
           const [selectedItem, setSelectedItem] = useState(null);
           const [isAdmin, setIsAdmin] = useState(false);
-          const adminPasswordInput = useStableInput('');
+          const [adminPassword, setAdminPassword] = useState('');
           const [showPasswordModal, setShowPasswordModal] = useState(false);
           const [editingItem, setEditingItem] = useState(null);
           const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -293,10 +249,10 @@
           };
 
           const checkAdminPassword = () => {
-            if (adminPasswordInput.value === 'admin123') {
+            if (adminPassword === 'admin123') {
               setIsAdmin(true);
               setShowPasswordModal(false);
-              adminPasswordInput.onChange({ target: { value: '' } });
+              setAdminPassword('');
             } else {
               alert('密碼錯誤！');
             }
@@ -711,19 +667,6 @@
             });
             const [showOperatorModal, setShowOperatorModal] = useState(false);
             const [showStockAdjustModal, setShowStockAdjustModal] = useState(false);
-            
-            // 使用穩定的輸入處理
-            const quantityInput = useStableInput(recordForm.quantity);
-            const noteInput = useStableInput(recordForm.note);
-            
-            // 同步更新 recordForm
-            useEffect(() => {
-              setRecordForm(prev => ({
-                ...prev,
-                quantity: quantityInput.value,
-                note: noteInput.value
-              }));
-            }, [quantityInput.value, noteInput.value]);
 
             const handleSubmitRecord = () => {
               if (!recordForm.quantity || !recordForm.operator) {
@@ -735,17 +678,15 @@
                 quantity: parseInt(recordForm.quantity)
               });
               setRecordForm({ type: 'out', quantity: '', note: '', operator: '' });
-              quantityInput.onChange({ target: { value: '' } });
-              noteInput.onChange({ target: { value: '' } });
             };
 
             // 庫存調整模態框
             const StockAdjustModal = () => {
-              const newStockInput = useStableInput(selectedItem.stock.toString());
-              const adjustNoteInput = useStableInput('');
+              const [newStock, setNewStock] = useState(selectedItem.stock);
+              const [adjustNote, setAdjustNote] = useState('');
 
               const handleAdjust = () => {
-                adjustStock(selectedItem.id, parseInt(newStockInput.value), adjustNoteInput.value);
+                adjustStock(selectedItem.id, parseInt(newStock), adjustNote);
                 setShowStockAdjustModal(false);
               };
 
@@ -764,24 +705,22 @@
                         <label className="block text-sm font-medium text-gray-700 mb-1">調整為</label>
                         <input
                           type="number"
-                          {...newStockInput}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 modal-input"
+                          value={newStock}
+                          onChange={(e) => setNewStock(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
                           placeholder="請輸入新的庫存數量"
                           min="0"
                           autoFocus
-                          autoComplete="off"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">調整原因</label>
                         <textarea
-                          {...adjustNoteInput}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 modal-input"
+                          value={adjustNote}
+                          onChange={(e) => setAdjustNote(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
                           placeholder="請輸入調整原因（選填）"
                           rows="3"
-                          autoComplete="off"
                         />
                       </div>
                     </div>
@@ -807,12 +746,12 @@
 
             // 操作人員管理模態框
             const OperatorModal = () => {
-              const newOperatorInput = useStableInput('');
+              const [newOperator, setNewOperator] = useState('');
 
               const addOperator = () => {
-                if (newOperatorInput.value.trim() && !operators.includes(newOperatorInput.value.trim())) {
-                  setOperators([...operators, newOperatorInput.value.trim()]);
-                  newOperatorInput.onChange({ target: { value: '' } });
+                if (newOperator.trim() && !operators.includes(newOperator.trim())) {
+                  setOperators([...operators, newOperator.trim()]);
+                  setNewOperator('');
                 }
               };
 
@@ -834,12 +773,12 @@
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          {...newOperatorInput}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 modal-input"
+                          value={newOperator}
+                          onChange={(e) => setNewOperator(e.target.value)}
+                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
                           placeholder="新增操作人員"
                           onKeyPress={(e) => e.key === 'Enter' && addOperator()}
                           autoFocus
-                          autoComplete="off"
                         />
                         <button
                           onClick={addOperator}
@@ -968,13 +907,11 @@
                         <label className="block text-sm font-medium text-gray-700 mb-1">數量</label>
                         <input
                           type="number"
-                          {...quantityInput}
+                          value={recordForm.quantity}
+                          onChange={(e) => setRecordForm({...recordForm, quantity: e.target.value})}
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="請輸入數量"
                           min="1"
-                          autoComplete="off"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                         />
                       </div>
                     </div>
@@ -1004,11 +941,11 @@
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
                       <textarea
-                        {...noteInput}
+                        value={recordForm.note}
+                        onChange={(e) => setRecordForm({...recordForm, note: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入備註（選填）"
                         rows="3"
-                        autoComplete="off"
                       />
                     </div>
                     <button
@@ -1090,30 +1027,32 @@
 
           // 新增商品模態框
           const AddItemModal = () => {
-            const nameInput = useStableInput('');
-            const categoryInput = useStableInput('');
-            const locationInput = useStableInput('');
-            const specificationsInput = useStableInput('');
-            const unitPriceInput = useStableInput('');
-            const stockInput = useStableInput('0');
+            const [itemForm, setItemForm] = useState({
+              name: '',
+              category: '',
+              location: '',
+              specifications: '',
+              unit_price: '',
+              stock: '0'
+            });
 
             const handleAdd = async () => {
-              if (!nameInput.value.trim()) {
+              if (!itemForm.name.trim()) {
                 alert('請填寫商品名稱');
                 return;
               }
 
-              const success = await addNewItem({
-                name: nameInput.value,
-                category: categoryInput.value,
-                location: locationInput.value,
-                specifications: specificationsInput.value,
-                unit_price: unitPriceInput.value,
-                stock: stockInput.value
-              });
-              
+              const success = await addNewItem(itemForm);
               if (success) {
                 setShowAddItemModal(false);
+                setItemForm({
+                  name: '',
+                  category: '',
+                  location: '',
+                  specifications: '',
+                  unit_price: '',
+                  stock: '0'
+                });
               }
             };
 
@@ -1131,67 +1070,63 @@
                       <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱 *</label>
                       <input
                         type="text"
-                        {...nameInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.name}
+                        onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品名稱"
                         autoFocus
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
                       <input
                         type="text"
-                        {...categoryInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.category}
+                        onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品類別"
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
                       <textarea
-                        {...locationInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.location}
+                        onChange={(e) => setItemForm({...itemForm, location: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入存放位置"
                         rows="3"
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
                       <input
                         type="text"
-                        {...specificationsInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.specifications}
+                        onChange={(e) => setItemForm({...itemForm, specifications: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品規格"
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
                       <input
                         type="number"
-                        {...unitPriceInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.unit_price}
+                        onChange={(e) => setItemForm({...itemForm, unit_price: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入單價"
                         min="0"
-                        autoComplete="off"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">初始庫存</label>
                       <input
                         type="number"
-                        {...stockInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={itemForm.stock}
+                        onChange={(e) => setItemForm({...itemForm, stock: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入初始庫存數量"
                         min="0"
-                        autoComplete="off"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
                       />
                     </div>
                   </div>
@@ -1217,19 +1152,18 @@
 
           // 編輯商品模態框
           const EditModal = () => {
-            const nameInput = useStableInput(editingItem?.name || '');
-            const locationInput = useStableInput(editingItem?.location || '');
-            const categoryInput = useStableInput(editingItem?.category || '');
-            const specificationsInput = useStableInput(editingItem?.specifications || '');
-            const unitPriceInput = useStableInput(editingItem?.unit_price?.toString() || '');
+            const [editForm, setEditForm] = useState({
+              name: editingItem?.name || '',
+              location: editingItem?.location || '',
+              category: editingItem?.category || '',
+              specifications: editingItem?.specifications || '',
+              unit_price: editingItem?.unit_price || ''
+            });
 
             const handleSave = () => {
               updateItem(editingItem.id, {
-                name: nameInput.value,
-                location: locationInput.value,
-                category: categoryInput.value,
-                specifications: specificationsInput.value,
-                unit_price: unitPriceInput.value ? parseInt(unitPriceInput.value) : null
+                ...editForm,
+                unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
               });
               setEditingItem(null);
             };
@@ -1248,49 +1182,47 @@
                       <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱</label>
                       <input
                         type="text"
-                        {...nameInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         autoFocus
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
                       <input
                         type="text"
-                        {...categoryInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
-                        autoComplete="off"
+                        value={editForm.category}
+                        onChange={(e) => setEditForm({...editForm, category: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
                       <textarea
-                        {...locationInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={editForm.location}
+                        onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         rows="3"
-                        autoComplete="off"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
                       <input
                         type="text"
-                        {...specificationsInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
-                        autoComplete="off"
+                        value={editForm.specifications}
+                        onChange={(e) => setEditForm({...editForm, specifications: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
                       <input
                         type="number"
-                        {...unitPriceInput}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                        value={editForm.unit_price}
+                        onChange={(e) => setEditForm({...editForm, unit_price: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入單價"
-                        autoComplete="off"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
                       />
                     </div>
                   </div>
@@ -1322,11 +1254,11 @@
                 <input
                   type="password"
                   placeholder="請輸入管理員密碼"
-                  {...adminPasswordInput}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent modal-input"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   onKeyPress={(e) => e.key === 'Enter' && checkAdminPassword()}
                   autoFocus
-                  autoComplete="off"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1338,7 +1270,7 @@
                   <button
                     onClick={() => {
                       setShowPasswordModal(false);
-                      adminPasswordInput.onChange({ target: { value: '' } });
+                      setAdminPassword('');
                     }}
                     className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
                   >
