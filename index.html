@@ -34,6 +34,26 @@
         input, textarea, select {
             font-size: 16px !important;
         }
+        
+        /* 圖片上傳按鈕樣式 */
+        .image-upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .image-upload-area:hover {
+            border-color: #4299e1;
+            background-color: #f7fafc;
+        }
+        .image-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -94,6 +114,19 @@
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
         );
+        
+        const Camera = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        );
+        
+        const Tag = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+        );
 
         const InventoryManager = () => {
           const [currentView, setCurrentView] = useState('overview');
@@ -103,26 +136,195 @@
           const [showPasswordModal, setShowPasswordModal] = useState(false);
           const [editingItem, setEditingItem] = useState(null);
           const [showAddItemModal, setShowAddItemModal] = useState(false);
+          const [showCategoryModal, setShowCategoryModal] = useState(false);
           const [filterCategory, setFilterCategory] = useState('');
           const [inventory, setInventory] = useState([]);
           const [loading, setLoading] = useState(true);
-          const [operators, setOperators] = useState(() => {
-            try {
-              const saved = localStorage.getItem('operators');
-              return saved ? JSON.parse(saved) : ['小王', '小李', '小陳', '小美', '小張'];
-            } catch {
-              return ['小王', '小李', '小陳', '小美', '小張'];
-            }
-          });
+          const [operators, setOperators] = useState([]);
+          const [categories, setCategories] = useState([]);
+          const fileInputRef = useRef(null);
 
-          // 保存操作人員列表
-          useEffect(() => {
+          // 從 Supabase 載入操作人員
+          const loadOperators = async () => {
             try {
-              localStorage.setItem('operators', JSON.stringify(operators));
+              const { data, error } = await supabase
+                .from('operators')
+                .select('*')
+                .order('name', { ascending: true });
+              
+              if (error) {
+                console.error('載入操作人員失敗:', error);
+                return;
+              }
+              
+              setOperators(data || []);
             } catch (error) {
-              console.error('保存操作人員失敗:', error);
+              console.error('載入操作人員錯誤:', error);
             }
-          }, [operators]);
+          };
+
+          // 從 Supabase 載入類別
+          const loadCategories = async () => {
+            try {
+              const { data, error } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name', { ascending: true });
+              
+              if (error) {
+                console.error('載入類別失敗:', error);
+                return;
+              }
+              
+              setCategories(data || []);
+            } catch (error) {
+              console.error('載入類別錯誤:', error);
+            }
+          };
+
+          // 新增操作人員到 Supabase
+          const addOperatorToDb = async (name) => {
+            try {
+              const { data, error } = await supabase
+                .from('operators')
+                .insert({ name })
+                .select()
+                .single();
+              
+              if (error) {
+                if (error.code === '23505') {
+                  alert('此操作人員已存在');
+                } else {
+                  console.error('新增操作人員失敗:', error);
+                  alert('新增失敗');
+                }
+                return false;
+              }
+              
+              await loadOperators();
+              return true;
+            } catch (error) {
+              console.error('新增操作人員錯誤:', error);
+              return false;
+            }
+          };
+
+          // 刪除操作人員
+          const deleteOperatorFromDb = async (id) => {
+            try {
+              const { error } = await supabase
+                .from('operators')
+                .delete()
+                .eq('id', id);
+              
+              if (error) {
+                console.error('刪除操作人員失敗:', error);
+                alert('刪除失敗');
+                return;
+              }
+              
+              await loadOperators();
+            } catch (error) {
+              console.error('刪除操作人員錯誤:', error);
+            }
+          };
+
+          // 新增類別到 Supabase
+          const addCategoryToDb = async (name) => {
+            try {
+              const { data, error } = await supabase
+                .from('categories')
+                .insert({ name })
+                .select()
+                .single();
+              
+              if (error) {
+                if (error.code === '23505') {
+                  alert('此類別已存在');
+                } else {
+                  console.error('新增類別失敗:', error);
+                  alert('新增失敗');
+                }
+                return false;
+              }
+              
+              await loadCategories();
+              return true;
+            } catch (error) {
+              console.error('新增類別錯誤:', error);
+              return false;
+            }
+          };
+
+          // 刪除類別
+          const deleteCategoryFromDb = async (id) => {
+            try {
+              const { error } = await supabase
+                .from('categories')
+                .delete()
+                .eq('id', id);
+              
+              if (error) {
+                console.error('刪除類別失敗:', error);
+                alert('刪除失敗');
+                return;
+              }
+              
+              await loadCategories();
+            } catch (error) {
+              console.error('刪除類別錯誤:', error);
+            }
+          };
+
+          // 上傳圖片到 Supabase Storage
+          const uploadImage = async (file, itemId) => {
+            try {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${itemId}_${Date.now()}.${fileExt}`;
+              const filePath = `products/${fileName}`;
+
+              const { data, error } = await supabase.storage
+                .from('product-images')
+                .upload(filePath, file, {
+                  cacheControl: '3600',
+                  upsert: true
+                });
+
+              if (error) {
+                console.error('上傳圖片失敗:', error);
+                alert('圖片上傳失敗');
+                return null;
+              }
+
+              // 取得公開 URL
+              const { data: { publicUrl } } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(filePath);
+
+              return publicUrl;
+            } catch (error) {
+              console.error('上傳圖片錯誤:', error);
+              return null;
+            }
+          };
+
+          // 刪除舊圖片
+          const deleteOldImage = async (imageUrl) => {
+            if (!imageUrl) return;
+            
+            try {
+              // 從 URL 提取檔案路徑
+              const urlParts = imageUrl.split('/');
+              const fileName = urlParts[urlParts.length - 1];
+              const filePath = `products/${fileName}`;
+              
+              await supabase.storage
+                .from('product-images')
+                .remove([filePath]);
+            } catch (error) {
+              console.error('刪除舊圖片錯誤:', error);
+            }
+          };
 
           // 處理瀏覽器上一頁功能
           useEffect(() => {
@@ -187,9 +389,11 @@
           // 初始載入資料
           useEffect(() => {
             loadInventory();
+            loadOperators();
+            loadCategories();
           }, []);
 
-            // Realtime 監聽器 - 即時同步資料
+          // Realtime 監聽器 - 即時同步資料
           useEffect(() => {
             const inventorySubscription = supabase
               .channel('inventory-changes')
@@ -197,7 +401,7 @@
                 { event: '*', schema: 'public', table: 'inventory' },
                 (payload) => {
                   console.log('庫存變化:', payload);
-                  loadInventory(); // 重新載入庫存資料
+                  loadInventory();
                 }
               )
               .subscribe();
@@ -208,22 +412,44 @@
                 { event: '*', schema: 'public', table: 'records' },
                 (payload) => {
                   console.log('記錄變化:', payload);
-                  // 如果正在查看商品詳細頁，重新載入記錄
                   if (selectedItem) {
                     loadItemRecords(selectedItem.id).then(records => {
                       setSelectedItem(prev => ({ ...prev, records }));
                     });
                   }
                 }
-             )
-             .subscribe();
+              )
+              .subscribe();
 
-  // 清理函數
-  return () => {
-    inventorySubscription.unsubscribe();
-    recordsSubscription.unsubscribe();
-  };
-}, [selectedItem]);
+            const operatorsSubscription = supabase
+              .channel('operators-changes')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'operators' },
+                (payload) => {
+                  console.log('操作人員變化:', payload);
+                  loadOperators();
+                }
+              )
+              .subscribe();
+
+            const categoriesSubscription = supabase
+              .channel('categories-changes')
+              .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'categories' },
+                (payload) => {
+                  console.log('類別變化:', payload);
+                  loadCategories();
+                }
+              )
+              .subscribe();
+
+            return () => {
+              inventorySubscription.unsubscribe();
+              recordsSubscription.unsubscribe();
+              operatorsSubscription.unsubscribe();
+              categoriesSubscription.unsubscribe();
+            };
+          }, [selectedItem]);
 
           // 篩選邏輯
           const filteredInventory = inventory.filter(item => {
@@ -259,7 +485,7 @@
           };
 
           // 新增商品
-          const addNewItem = async (itemData) => {
+          const addNewItem = async (itemData, imageFile) => {
             try {
               const { data, error } = await supabase
                 .from('inventory')
@@ -269,7 +495,8 @@
                   location: itemData.location,
                   category: itemData.category,
                   specifications: itemData.specifications,
-                  unit_price: parseInt(itemData.unit_price) || null
+                  unit_price: parseInt(itemData.unit_price) || null,
+                  image_url: null
                 })
                 .select()
                 .single();
@@ -278,6 +505,17 @@
                 console.error('新增商品失敗:', error);
                 alert('新增失敗: ' + error.message);
                 return false;
+              }
+
+              // 上傳圖片（如果有）
+              if (imageFile) {
+                const imageUrl = await uploadImage(imageFile, data.id);
+                if (imageUrl) {
+                  await supabase
+                    .from('inventory')
+                    .update({ image_url: imageUrl })
+                    .eq('id', data.id);
+                }
               }
 
               // 如果有初始庫存，新增一筆入庫記錄
@@ -306,11 +544,19 @@
 
           // 刪除商品
           const deleteItem = async (itemId) => {
-            if (!confirm('確定要刪除這個商品嗎？相關的出入庫記錄也會一併刪除。')) {
+            if (!confirm('確定要刪除這個商品嗎？相關的出入庫記錄和圖片也會一併刪除。')) {
               return;
             }
 
             try {
+              // 取得商品資訊（包含圖片 URL）
+              const item = inventory.find(i => i.id === itemId);
+              
+              // 刪除圖片
+              if (item && item.image_url) {
+                await deleteOldImage(item.image_url);
+              }
+              
               // 先刪除相關記錄
               await supabase.from('records').delete().eq('item_id', itemId);
               
@@ -455,8 +701,22 @@
           };
 
           // 更新商品資訊
-          const updateItem = async (itemId, updates) => {
+          const updateItem = async (itemId, updates, imageFile) => {
             try {
+              const currentItem = inventory.find(item => item.id === itemId);
+              
+              // 如果有新圖片，先上傳
+              if (imageFile) {
+                const imageUrl = await uploadImage(imageFile, itemId);
+                if (imageUrl) {
+                  // 刪除舊圖片
+                  if (currentItem.image_url) {
+                    await deleteOldImage(currentItem.image_url);
+                  }
+                  updates.image_url = imageUrl;
+                }
+              }
+
               const { error } = await supabase
                 .from('inventory')
                 .update(updates)
@@ -545,13 +805,22 @@
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto justify-end">
                   {isAdmin && (
-                    <button
-                      onClick={() => setShowAddItemModal(true)}
-                      className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
-                    >
-                      <Plus size={16} />
-                      新增商品
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
+                      >
+                        <Plus size={16} />
+                        新增商品
+                      </button>
+                      <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
+                      >
+                        <Tag size={16} />
+                        管理類別
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => setShowPasswordModal(true)}
@@ -579,8 +848,8 @@
                   style={{ fontSize: '16px' }}
                 >
                   <option value="">全部類別</option>
-                  {[...new Set(inventory.map(item => item.category))].map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
                   ))}
                 </select>
               </div>
@@ -608,7 +877,20 @@
                     <div onClick={() => navigateToDetail(item)}>
                       {/* 圖片區域 */}
                       <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
-                        <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className={`absolute inset-0 flex items-center justify-center ${item.image_url ? 'hidden' : ''}`}>
+                          <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        </div>
                         {/* 類別標籤在上方 */}
                         <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium max-w-20 truncate">
                           {item.category}
@@ -754,14 +1036,10 @@
               const [newOperator, setNewOperator] = useState('');
 
               const addOperator = () => {
-                if (newOperator.trim() && !operators.includes(newOperator.trim())) {
-                  setOperators([...operators, newOperator.trim()]);
+                if (newOperator.trim()) {
+                  addOperatorToDb(newOperator.trim());
                   setNewOperator('');
                 }
-              };
-
-              const removeOperator = (operatorToRemove) => {
-                setOperators(operators.filter(op => op !== operatorToRemove));
               };
 
               return (
@@ -796,10 +1074,10 @@
                       
                       <div className="max-h-40 overflow-y-auto">
                         {operators.map(operator => (
-                          <div key={operator} className="flex justify-between items-center py-2 border-b">
-                            <span>{operator}</span>
+                          <div key={operator.id} className="flex justify-between items-center py-2 border-b">
+                            <span>{operator.name}</span>
                             <button
-                              onClick={() => removeOperator(operator)}
+                              onClick={() => deleteOperatorFromDb(operator.id)}
                               className="text-red-500 hover:text-red-700 text-sm"
                             >
                               刪除
@@ -820,7 +1098,7 @@
               );
             };
 
-            return (
+return (
               <div className="p-6 max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                   <button
@@ -855,8 +1133,16 @@
                 <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                        <Package size={120} className="text-gray-400" />
+                      <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-4 overflow-hidden">
+                        {selectedItem.image_url ? (
+                          <img 
+                            src={selectedItem.image_url} 
+                            alt={selectedItem.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Package size={120} className="text-gray-400" />
+                        )}
                       </div>
                     </div>
                     <div>
@@ -936,7 +1222,7 @@
                         >
                           <option value="">請選擇操作人員</option>
                           {operators.map(op => (
-                            <option key={op} value={op}>{op}</option>
+                            <option key={op.id} value={op.name}>{op.name}</option>
                           ))}
                         </select>
                         {isAdmin && (
@@ -1037,6 +1323,73 @@
             );
           };
 
+          // 類別管理模態框
+          const CategoryModal = () => {
+            const [newCategory, setNewCategory] = useState('');
+
+            const addCategory = () => {
+              if (newCategory.trim()) {
+                addCategoryToDb(newCategory.trim());
+                setNewCategory('');
+              }
+            };
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">管理商品類別</h2>
+                    <button onClick={() => setShowCategoryModal(false)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="新增類別"
+                        onKeyPress={(e) => e.key === 'Enter' && addCategory()}
+                        autoFocus
+                        style={{ fontSize: '16px' }}
+                      />
+                      <button
+                        onClick={addCategory}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      >
+                        新增
+                      </button>
+                    </div>
+                    
+                    <div className="max-h-40 overflow-y-auto">
+                      {categories.map(category => (
+                        <div key={category.id} className="flex justify-between items-center py-2 border-b">
+                          <span>{category.name}</span>
+                          <button
+                            onClick={() => deleteCategoryFromDb(category.id)}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            刪除
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowCategoryModal(false)}
+                    className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    完成
+                  </button>
+                </div>
+              </div>
+            );
+          };
+
           // 新增商品模態框
           const AddItemModal = () => {
             const [itemForm, setItemForm] = useState({
@@ -1047,6 +1400,21 @@
               unit_price: '',
               stock: '0'
             });
+            const [imageFile, setImageFile] = useState(null);
+            const [imagePreview, setImagePreview] = useState(null);
+            const fileInputRef = useRef(null);
+
+            const handleImageChange = (e) => {
+              const file = e.target.files[0];
+              if (file && file.type.startsWith('image/')) {
+                setImageFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setImagePreview(reader.result);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
 
             const handleAdd = async () => {
               if (!itemForm.name.trim()) {
@@ -1054,7 +1422,7 @@
                 return;
               }
 
-              const success = await addNewItem(itemForm);
+              const success = await addNewItem(itemForm, imageFile);
               if (success) {
                 setShowAddItemModal(false);
                 setItemForm({
@@ -1065,6 +1433,8 @@
                   unit_price: '',
                   stock: '0'
                 });
+                setImageFile(null);
+                setImagePreview(null);
               }
             };
 
@@ -1078,6 +1448,40 @@
                     </button>
                   </div>
                   <div className="space-y-4">
+                    {/* 圖片上傳 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      {imagePreview ? (
+                        <div className="relative">
+                          <img src={imagePreview} alt="預覽" className="image-preview" />
+                          <button
+                            onClick={() => {
+                              setImageFile(null);
+                              setImagePreview(null);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current.click()}
+                          className="image-upload-area"
+                        >
+                          <Camera size={48} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm text-gray-500">點擊上傳圖片</p>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱 *</label>
                       <input
@@ -1086,20 +1490,22 @@
                         onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="請輸入商品名稱"
-                        autoFocus
                         style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
-                      <input
-                        type="text"
+                      <select
                         value={itemForm.category}
                         onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入商品類別"
                         style={{ fontSize: '16px' }}
-                      />
+                      >
+                        <option value="">請選擇類別</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.name}>{category.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
@@ -1181,18 +1587,33 @@
               specifications: editingItem?.specifications || '',
               unit_price: editingItem?.unit_price || ''
             });
+            const [imageFile, setImageFile] = useState(null);
+            const [imagePreview, setImagePreview] = useState(editingItem?.image_url || null);
+            const fileInputRef = useRef(null);
+
+            const handleImageChange = (e) => {
+              const file = e.target.files[0];
+              if (file && file.type.startsWith('image/')) {
+                setImageFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setImagePreview(reader.result);
+                };
+                reader.readAsDataURL(file);
+              }
+            };
 
             const handleSave = () => {
               updateItem(editingItem.id, {
                 ...editForm,
                 unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
-              });
+              }, imageFile);
               setEditingItem(null);
             };
 
             return (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold">編輯商品</h2>
                     <button onClick={() => setEditingItem(null)}>
@@ -1200,6 +1621,48 @@
                     </button>
                   </div>
                   <div className="space-y-4">
+                    {/* 圖片編輯 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                      {imagePreview ? (
+                        <div className="relative">
+                          <img src={imagePreview} alt="預覽" className="image-preview" />
+                          <div className="absolute top-2 right-2 flex gap-2">
+                            <button
+                              onClick={() => fileInputRef.current.click()}
+                              className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
+                            >
+                              <Camera size={16} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setImageFile(null);
+                                setImagePreview(null);
+                              }}
+                              className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current.click()}
+                          className="image-upload-area"
+                        >
+                          <Camera size={48} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm text-gray-500">點擊上傳圖片</p>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱</label>
                       <input
@@ -1207,19 +1670,22 @@
                         value={editForm.name}
                         onChange={(e) => setEditForm({...editForm, name: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        autoFocus
                         style={{ fontSize: '16px' }}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
-                      <input
-                        type="text"
+                      <select
                         value={editForm.category}
                         onChange={(e) => setEditForm({...editForm, category: e.target.value})}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         style={{ fontSize: '16px' }}
-                      />
+                      >
+                        <option value="">請選擇類別</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.name}>{category.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
@@ -1365,6 +1831,7 @@
               {showPasswordModal && <PasswordModal />}
               {editingItem && <EditModal />}
               {showAddItemModal && <AddItemModal />}
+              {showCategoryModal && <CategoryModal />}
             </div>
           );
         };
@@ -1379,4 +1846,3 @@
     </script>
 </body>
 </html>
-                
