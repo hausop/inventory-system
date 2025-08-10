@@ -796,77 +796,7 @@
           };
 
           // 總覽頁面
-const OverviewPage = () => {
-  const [showOperatorModal, setShowOperatorModal] = useState(false);
-  
-  // 操作人員管理模態框
-  const OperatorModal = () => {
-    const [newOperator, setNewOperator] = useState('');
-
-    const addOperator = () => {
-      if (newOperator.trim()) {
-        addOperatorToDb(newOperator.trim());
-        setNewOperator('');
-      }
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">管理操作人員</h2>
-            <button onClick={() => setShowOperatorModal(false)}>
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newOperator}
-                onChange={(e) => setNewOperator(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                placeholder="新增操作人員"
-                onKeyPress={(e) => e.key === 'Enter' && addOperator()}
-                autoFocus
-                style={{ fontSize: '16px' }}
-              />
-              <button
-                onClick={addOperator}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-              >
-                新增
-              </button>
-            </div>
-            
-            <div className="max-h-40 overflow-y-auto">
-              {operators.map(operator => (
-                <div key={operator.id} className="flex justify-between items-center py-2 border-b">
-                  <span>{operator.name}</span>
-                  <button
-                    onClick={() => deleteOperatorFromDb(operator.id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    刪除
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <button
-            onClick={() => setShowOperatorModal(false)}
-            className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-          >
-            完成
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  return (
+const OverviewPage = () => (
   <div className="p-4 sm:p-6">
     {/* 管理模式標題列 */}
     {isAdmin && (
@@ -904,13 +834,6 @@ const OverviewPage = () => {
             >
               <Tag size={16} />
               管理類別
-            </button>
-            <button
-              onClick={() => setShowOperatorModal(true)}
-              className="px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-sm flex items-center gap-2"
->
-            <Settings size={16} />
-              管理人員
             </button>
           </>
         ) : (
@@ -1023,12 +946,7 @@ const OverviewPage = () => {
                 </div>
               )}
             </div>
-            
-            {/* 模態框 */}
-            {showOperatorModal && <OperatorModal />}
-          </div>
-        );
-      };
+          );
 
           // 詳細頁面
           const DetailPage = () => {
