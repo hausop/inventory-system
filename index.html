@@ -48,11 +48,66 @@
             border-color: #4299e1;
             background-color: #f7fafc;
         }
-        .image-preview {
+        
+        /* 圖片預覽容器 - 正方形 */
+        .image-preview-container {
             width: 100%;
-            height: 200px;
-            object-fit: cover;
+            aspect-ratio: 1/1;
+            position: relative;
+            overflow: hidden;
             border-radius: 0.5rem;
+            background-color: #f3f4f6;
+        }
+        
+        /* 可拖動的圖片 */
+        .draggable-image {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            -webkit-user-drag: none;
+            transition: none;
+        }
+        
+        .draggable-image.dragging {
+            cursor: grabbing;
+        }
+        
+        /* 圖片控制按鈕組 */
+        .image-controls {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        
+        /* 縮放滑桿 */
+        .zoom-slider {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .zoom-slider input[type="range"] {
+            flex: 1;
+            height: 4px;
+        }
+        
+        /* 裁切指示框 */
+        .crop-overlay {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
@@ -1504,7 +1559,13 @@
             });
             const [imageFile, setImageFile] = useState(null);
             const [imagePreview, setImagePreview] = useState(null);
+            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+            const [imageScale, setImageScale] = useState(1);
+            const [isDragging, setIsDragging] = useState(false);
+            const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
             const fileInputRef = useRef(null);
+            const imageRef = useRef(null);
+            const containerRef = useRef(null);
 
             const handleImageChange = (e) => {
               const file = e.target.files[0];
@@ -1513,10 +1574,67 @@
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   setImagePreview(reader.result);
+                  setImagePosition({ x: 0, y: 0 });
+                  setImageScale(1);
                 };
                 reader.readAsDataURL(file);
               }
             };
+
+            const handleMouseDown = (e) => {
+              if (!imagePreview) return;
+              setIsDragging(true);
+              setDragStart({
+                x: e.clientX - imagePosition.x,
+                y: e.clientY - imagePosition.y
+              });
+              e.preventDefault();
+            };
+
+            const handleMouseMove = (e) => {
+              if (!isDragging || !imagePreview) return;
+              const newX = e.clientX - dragStart.x;
+              const newY = e.clientY - dragStart.y;
+              setImagePosition({ x: newX, y: newY });
+            };
+
+            const handleMouseUp = () => {
+              setIsDragging(false);
+            };
+
+            const handleTouchStart = (e) => {
+              if (!imagePreview) return;
+              const touch = e.touches[0];
+              setIsDragging(true);
+              setDragStart({
+                x: touch.clientX - imagePosition.x,
+                y: touch.clientY - imagePosition.y
+              });
+              e.preventDefault();
+            };
+
+            const handleTouchMove = (e) => {
+              if (!isDragging || !imagePreview) return;
+              const touch = e.touches[0];
+              const newX = touch.clientX - dragStart.x;
+              const newY = touch.clientY - dragStart.y;
+              setImagePosition({ x: newX, y: newY });
+            };
+
+            useEffect(() => {
+              if (isDragging) {
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                document.addEventListener('touchmove', handleTouchMove);
+                document.addEventListener('touchend', handleMouseUp);
+                return () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                  document.removeEventListener('touchmove', handleTouchMove);
+                  document.removeEventListener('touchend', handleMouseUp);
+                };
+              }
+            }, [isDragging, dragStart]);
 
             const handleAdd = async () => {
               if (!itemForm.name.trim()) {
@@ -1537,6 +1655,8 @@
                 });
                 setImageFile(null);
                 setImagePreview(null);
+                setImagePosition({ x: 0, y: 0 });
+                setImageScale(1);
               }
             };
 
@@ -1561,17 +1681,61 @@
                         className="hidden"
                       />
                       {imagePreview ? (
-                        <div className="relative">
-                          <img src={imagePreview} alt="預覽" className="image-preview" />
-                          <button
-                            onClick={() => {
-                              setImageFile(null);
-                              setImagePreview(null);
-                            }}
-                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-                          >
-                            <X size={16} />
-                          </button>
+                        <div className="space-y-2">
+                          <div className="image-preview-container" ref={containerRef}>
+                            <img 
+                              ref={imageRef}
+                              src={imagePreview} 
+                              alt="預覽"
+                              className={`draggable-image ${isDragging ? 'dragging' : ''}`}
+                              style={{
+                                transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
+                                maxWidth: 'none',
+                                height: 'auto',
+                                width: `${100 * imageScale}%`
+                              }}
+                              onMouseDown={handleMouseDown}
+                              onTouchStart={handleTouchStart}
+                            />
+                            <div className="crop-overlay"></div>
+                            <div className="image-controls">
+                              <button
+                                onClick={() => fileInputRef.current.click()}
+                                className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
+                                title="更換圖片"
+                              >
+                                <Camera size={16} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setImageFile(null);
+                                  setImagePreview(null);
+                                  setImagePosition({ x: 0, y: 0 });
+                                  setImageScale(1);
+                                }}
+                                className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
+                                title="刪除圖片"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                            <div className="zoom-slider">
+                              <span className="text-xs text-gray-600">縮放</span>
+                              <input
+                                type="range"
+                                min="0.5"
+                                max="2"
+                                step="0.1"
+                                value={imageScale}
+                                onChange={(e) => setImageScale(parseFloat(e.target.value))}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-600">{Math.round(imageScale * 100)}%</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 text-center">
+                            拖動圖片調整位置，使用縮放滑桿調整大小
+                          </p>
                         </div>
                       ) : (
                         <div
@@ -1691,17 +1855,23 @@
             });
             const [imageFile, setImageFile] = useState(null);
             const [imagePreview, setImagePreview] = useState(editingItem?.image_url || null);
-            const [shouldDeleteImage, setShouldDeleteImage] = useState(false); // 新增標記
+            const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
+            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+            const [imageScale, setImageScale] = useState(1);
+            const [isDragging, setIsDragging] = useState(false);
+            const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
             const fileInputRef = useRef(null);
 
             const handleImageChange = (e) => {
               const file = e.target.files[0];
               if (file && file.type.startsWith('image/')) {
                 setImageFile(file);
-                setShouldDeleteImage(false); // 有新圖片就不刪除舊圖片
+                setShouldDeleteImage(false);
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   setImagePreview(reader.result);
+                  setImagePosition({ x: 0, y: 0 });
+                  setImageScale(1);
                 };
                 reader.readAsDataURL(file);
               }
@@ -1710,8 +1880,65 @@
             const handleDeleteImage = () => {
               setImageFile(null);
               setImagePreview(null);
-              setShouldDeleteImage(true); // 標記要刪除圖片
+              setShouldDeleteImage(true);
+              setImagePosition({ x: 0, y: 0 });
+              setImageScale(1);
             };
+
+            const handleMouseDown = (e) => {
+              if (!imagePreview) return;
+              setIsDragging(true);
+              setDragStart({
+                x: e.clientX - imagePosition.x,
+                y: e.clientY - imagePosition.y
+              });
+              e.preventDefault();
+            };
+
+            const handleMouseMove = (e) => {
+              if (!isDragging || !imagePreview) return;
+              const newX = e.clientX - dragStart.x;
+              const newY = e.clientY - dragStart.y;
+              setImagePosition({ x: newX, y: newY });
+            };
+
+            const handleMouseUp = () => {
+              setIsDragging(false);
+            };
+
+            const handleTouchStart = (e) => {
+              if (!imagePreview) return;
+              const touch = e.touches[0];
+              setIsDragging(true);
+              setDragStart({
+                x: touch.clientX - imagePosition.x,
+                y: touch.clientY - imagePosition.y
+              });
+              e.preventDefault();
+            };
+
+            const handleTouchMove = (e) => {
+              if (!isDragging || !imagePreview) return;
+              const touch = e.touches[0];
+              const newX = touch.clientX - dragStart.x;
+              const newY = touch.clientY - dragStart.y;
+              setImagePosition({ x: newX, y: newY });
+            };
+
+            useEffect(() => {
+              if (isDragging) {
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                document.addEventListener('touchmove', handleTouchMove);
+                document.addEventListener('touchend', handleMouseUp);
+                return () => {
+                  document.removeEventListener('mousemove', handleMouseMove);
+                  document.removeEventListener('mouseup', handleMouseUp);
+                  document.removeEventListener('touchmove', handleTouchMove);
+                  document.removeEventListener('touchend', handleMouseUp);
+                };
+              }
+            }, [isDragging, dragStart]);
 
             const handleSave = async () => {
               const updates = {
@@ -1719,10 +1946,8 @@
                 unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
               };
 
-              // 如果標記要刪除圖片
               if (shouldDeleteImage) {
                 updates.image_url = null;
-                // 刪除舊圖片
                 if (editingItem.image_url) {
                   await deleteOldImage(editingItem.image_url);
                 }
@@ -1753,22 +1978,55 @@
                         className="hidden"
                       />
                       {imagePreview ? (
-                        <div className="relative">
-                          <img src={imagePreview} alt="預覽" className="image-preview" />
-                          <div className="absolute top-2 right-2 flex gap-2">
-                            <button
-                              onClick={() => fileInputRef.current.click()}
-                              className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
-                            >
-                              <Camera size={16} />
-                            </button>
-                            <button
-                              onClick={handleDeleteImage}
-                              className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-                            >
-                              <X size={16} />
-                            </button>
+                        <div className="space-y-2">
+                          <div className="image-preview-container">
+                            <img 
+                              src={imagePreview} 
+                              alt="預覽"
+                              className={`draggable-image ${isDragging ? 'dragging' : ''}`}
+                              style={{
+                                transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
+                                maxWidth: 'none',
+                                height: 'auto',
+                                width: `${100 * imageScale}%`
+                              }}
+                              onMouseDown={handleMouseDown}
+                              onTouchStart={handleTouchStart}
+                            />
+                            <div className="crop-overlay"></div>
+                            <div className="image-controls">
+                              <button
+                                onClick={() => fileInputRef.current.click()}
+                                className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
+                                title="更換圖片"
+                              >
+                                <Camera size={16} />
+                              </button>
+                              <button
+                                onClick={handleDeleteImage}
+                                className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
+                                title="刪除圖片"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                            <div className="zoom-slider">
+                              <span className="text-xs text-gray-600">縮放</span>
+                              <input
+                                type="range"
+                                min="0.5"
+                                max="2"
+                                step="0.1"
+                                value={imageScale}
+                                onChange={(e) => setImageScale(parseFloat(e.target.value))}
+                                className="flex-1"
+                              />
+                              <span className="text-xs text-gray-600">{Math.round(imageScale * 100)}%</span>
+                            </div>
                           </div>
+                          <p className="text-xs text-gray-500 text-center">
+                            拖動圖片調整位置，使用縮放滑桿調整大小
+                          </p>
                         </div>
                       ) : (
                         <div
