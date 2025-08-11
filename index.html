@@ -127,6 +127,12 @@
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
         );
+        
+        const Users = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+        );
 
         const InventoryManager = () => {
           const [currentView, setCurrentView] = useState('overview');
@@ -137,6 +143,7 @@
           const [editingItem, setEditingItem] = useState(null);
           const [showAddItemModal, setShowAddItemModal] = useState(false);
           const [showCategoryModal, setShowCategoryModal] = useState(false);
+          const [showOperatorModal, setShowOperatorModal] = useState(false);
           const [filterCategory, setFilterCategory] = useState('');
           const [inventory, setInventory] = useState([]);
           const [loading, setLoading] = useState(true);
@@ -795,57 +802,144 @@
             }
           };
 
+          // 操作人員管理模態框（獨立版本）
+          const OperatorManagementModal = () => {
+            const [newOperator, setNewOperator] = useState('');
+
+            const addOperator = () => {
+              if (newOperator.trim()) {
+                addOperatorToDb(newOperator.trim());
+                setNewOperator('');
+              }
+            };
+
+            return (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Users size={20} />
+                      管理操作人員
+                    </h2>
+                    <button onClick={() => setShowOperatorModal(false)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newOperator}
+                        onChange={(e) => setNewOperator(e.target.value)}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                        placeholder="新增操作人員"
+                        onKeyPress={(e) => e.key === 'Enter' && addOperator()}
+                        autoFocus
+                        style={{ fontSize: '16px' }}
+                      />
+                      <button
+                        onClick={addOperator}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                      >
+                        新增
+                      </button>
+                    </div>
+                    
+                    <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
+                      {operators.length > 0 ? (
+                        operators.map(operator => (
+                          <div key={operator.id} className="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
+                            <span className="font-medium">{operator.name}</span>
+                            <button
+                              onClick={() => deleteOperatorFromDb(operator.id)}
+                              className="text-red-500 hover:text-red-700 text-sm px-2 py-1 hover:bg-red-50 rounded"
+                            >
+                              刪除
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          尚無操作人員
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+                      提示：新增的操作人員會顯示在出入庫記錄的下拉選單中
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowOperatorModal(false)}
+                    className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                  >
+                    完成
+                  </button>
+                </div>
+              </div>
+            );
+          };
+
           // 總覽頁面
-const OverviewPage = () => (
-  <div className="p-4 sm:p-6">
-    {/* 管理模式標題列 */}
-    {isAdmin && (
-      <div className="bg-gray-100 rounded-lg px-4 py-2 mb-4 flex justify-between items-center">
-        <span className="text-gray-600 font-medium">管理模式</span>
-        <button
-          onClick={() => setIsAdmin(false)}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          登出
-        </button>
-      </div>
-    )}
-    
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-      <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
-          <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
-        </div>
-      </div>
-      <div className="flex gap-2 w-full sm:w-auto justify-end">
-        {isAdmin ? (
-          <>
-            <button
-              onClick={() => setShowAddItemModal(true)}
-              className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
-            >
-              <Plus size={16} />
-              新增商品
-            </button>
-            <button
-              onClick={() => setShowCategoryModal(true)}
-              className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
-            >
-              <Tag size={16} />
-              管理類別
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-          >
-            管理登入
-          </button>
-        )}
-      </div>
-    </div>
+          const OverviewPage = () => (
+            <div className="p-4 sm:p-6">
+              {/* 管理模式標題列 */}
+              {isAdmin && (
+                <div className="bg-gray-100 rounded-lg px-4 py-2 mb-4 flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">管理模式</span>
+                  <button
+                    onClick={() => setIsAdmin(false)}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    登出
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
+                    <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto justify-end flex-wrap">
+                  {isAdmin ? (
+                    <>
+                      <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
+                      >
+                        <Plus size={16} />
+                        新增商品
+                      </button>
+                      <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
+                      >
+                        <Tag size={16} />
+                        管理類別
+                      </button>
+                      <button
+                        onClick={() => setShowOperatorModal(true)}
+                        className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm flex items-center gap-2"
+                      >
+                        <Users size={16} />
+                        操作人員
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setShowPasswordModal(true)}
+                      className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                    >
+                      管理登入
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* 類別篩選 */}
               <div className="mb-6">
@@ -956,7 +1050,7 @@ const OverviewPage = () => (
               note: '',
               operator: ''
             });
-            const [showOperatorModal, setShowOperatorModal] = useState(false);
+            const [showOperatorModalDetail, setShowOperatorModalDetail] = useState(false);
             const [showStockAdjustModal, setShowStockAdjustModal] = useState(false);
 
             const handleSubmitRecord = () => {
@@ -1039,7 +1133,7 @@ const OverviewPage = () => (
               );
             };
 
-            // 操作人員管理模態框
+            // 操作人員管理模態框（詳細頁版本）
             const OperatorModal = () => {
               const [newOperator, setNewOperator] = useState('');
 
@@ -1055,7 +1149,7 @@ const OverviewPage = () => (
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold">管理操作人員</h2>
-                      <button onClick={() => setShowOperatorModal(false)}>
+                      <button onClick={() => setShowOperatorModalDetail(false)}>
                         <X size={20} />
                       </button>
                     </div>
@@ -1096,7 +1190,7 @@ const OverviewPage = () => (
                     </div>
                     
                     <button
-                      onClick={() => setShowOperatorModal(false)}
+                      onClick={() => setShowOperatorModalDetail(false)}
                       className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
                     >
                       完成
@@ -1106,7 +1200,7 @@ const OverviewPage = () => (
               );
             };
 
-return (
+            return (
               <div className="p-6 max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                   <button
@@ -1235,7 +1329,7 @@ return (
                         </select>
                         {isAdmin && (
                           <button
-                            onClick={() => setShowOperatorModal(true)}
+                            onClick={() => setShowOperatorModalDetail(true)}
                             className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
                           >
                             管理
@@ -1325,7 +1419,7 @@ return (
                 </div>
                 
                 {/* 模態框 */}
-                {showOperatorModal && <OperatorModal />}
+                {showOperatorModalDetail && <OperatorModal />}
                 {showStockAdjustModal && <StockAdjustModal />}
               </div>
             );
@@ -1840,6 +1934,7 @@ return (
               {editingItem && <EditModal />}
               {showAddItemModal && <AddItemModal />}
               {showCategoryModal && <CategoryModal />}
+              {showOperatorModal && <OperatorManagementModal />}
             </div>
           );
         };
