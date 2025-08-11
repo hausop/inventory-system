@@ -1691,12 +1691,14 @@
             });
             const [imageFile, setImageFile] = useState(null);
             const [imagePreview, setImagePreview] = useState(editingItem?.image_url || null);
+            const [shouldDeleteImage, setShouldDeleteImage] = useState(false); // 新增標記
             const fileInputRef = useRef(null);
 
             const handleImageChange = (e) => {
               const file = e.target.files[0];
               if (file && file.type.startsWith('image/')) {
                 setImageFile(file);
+                setShouldDeleteImage(false); // 有新圖片就不刪除舊圖片
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   setImagePreview(reader.result);
@@ -1705,11 +1707,28 @@
               }
             };
 
-            const handleSave = () => {
-              updateItem(editingItem.id, {
+            const handleDeleteImage = () => {
+              setImageFile(null);
+              setImagePreview(null);
+              setShouldDeleteImage(true); // 標記要刪除圖片
+            };
+
+            const handleSave = async () => {
+              const updates = {
                 ...editForm,
                 unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
-              }, imageFile);
+              };
+
+              // 如果標記要刪除圖片
+              if (shouldDeleteImage) {
+                updates.image_url = null;
+                // 刪除舊圖片
+                if (editingItem.image_url) {
+                  await deleteOldImage(editingItem.image_url);
+                }
+              }
+
+              updateItem(editingItem.id, updates, imageFile);
               setEditingItem(null);
             };
 
@@ -1744,10 +1763,7 @@
                               <Camera size={16} />
                             </button>
                             <button
-                              onClick={() => {
-                                setImageFile(null);
-                                setImagePreview(null);
-                              }}
+                              onClick={handleDeleteImage}
                               className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
                             >
                               <X size={16} />
