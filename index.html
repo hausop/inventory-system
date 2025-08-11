@@ -796,48 +796,56 @@
           };
 
           // 總覽頁面
-          const OverviewPage = () => (
-            <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
-                  <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto justify-end">
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={() => setShowAddItemModal(true)}
-                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
-                      >
-                        <Plus size={16} />
-                        新增商品
-                      </button>
-                      <button
-                        onClick={() => setShowCategoryModal(true)}
-                        className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
-                      >
-                        <Tag size={16} />
-                        管理類別
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setShowPasswordModal(true)}
-                    className={`px-3 py-2 rounded-lg text-sm ${isAdmin ? 'bg-green-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                  >
-                    {isAdmin ? '管理模式' : '管理登入'}
-                  </button>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setIsAdmin(false)}
-                      className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
-                    >
-                      登出
-                    </button>
-                  )}
-                </div>
-              </div>
+const OverviewPage = () => (
+  <div className="p-4 sm:p-6">
+    {/* 管理模式標題列 */}
+    {isAdmin && (
+      <div className="bg-gray-100 rounded-lg px-4 py-2 mb-4 flex justify-between items-center">
+        <span className="text-gray-600 font-medium">管理模式</span>
+        <button
+          onClick={() => setIsAdmin(false)}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          登出
+        </button>
+      </div>
+    )}
+    
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">禮品庫存</h1>
+          <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
+        </div>
+      </div>
+      <div className="flex gap-2 w-full sm:w-auto justify-end">
+        {isAdmin ? (
+          <>
+            <button
+              onClick={() => setShowAddItemModal(true)}
+              className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
+            >
+              <Plus size={16} />
+              新增商品
+            </button>
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
+            >
+              <Tag size={16} />
+              管理類別
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+          >
+            管理登入
+          </button>
+        )}
+      </div>
+    </div>
 
               {/* 類別篩選 */}
               <div className="mb-6">
@@ -1098,7 +1106,7 @@
               );
             };
 
-              return (
+return (
               <div className="p-6 max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
                   <button
@@ -1438,7 +1446,7 @@
               }
             };
 
-              return (
+            return (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                   <div className="flex justify-between items-center mb-4">
