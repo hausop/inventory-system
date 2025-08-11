@@ -114,6 +114,11 @@
   table {
     min-width: 600px;
   }
+
+  th.date-col, 
+  td.date-col {
+    width: 80px !important;
+  }
 }
 </style>
 </head>
@@ -1429,7 +1434,7 @@
     <table className="w-full text-sm min-w-[600px]">
       <thead>
         <tr className="border-b">
-          <th className="w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-left py-2">日期時間</th>
+          <th className="date-col w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-left py-2">日期時間</th>
           <th className="text-center py-2">類型</th>
           <th className="text-center py-2">數量</th>
           <th className="text-center py-2">操作人員</th>
@@ -1441,7 +1446,7 @@
         {selectedItem.records && selectedItem.records.length > 0 ? (
           selectedItem.records.map((record, index) => (
             <tr key={record.id || index} className="border-b hover:bg-gray-50">
-              <td className="py-2 w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
+              <td className="date-col py-2 w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
                 {window.innerWidth < 640
                   ? new Date(record.operation_date).toLocaleDateString('zh-TW')
                   : new Date(record.operation_date).toLocaleString('zh-TW')}
