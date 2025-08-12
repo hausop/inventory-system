@@ -816,13 +816,16 @@ useEffect(() => {
             };
             
             // 商品卡片
-            const ProductCard = ({ item }) => {
-                const [imageLoaded, setImageLoaded] = useState(false);
-                
-                const getStockStatus = (stock) => {
-                    if (stock === 0) return { color: 'bg-gray-500', pulse: false };
-                    if (stock < 10) return { color: 'bg-red-500', pulse: true };
-                    if (stock < 50) return { color: 'bg-amber-500', pulse: false };
+            const getStockStatus = (stock) => {
+    if (stock === 0) return { color: 'bg-gray-500', pulse: false };
+    if (stock < 10) return { color: 'bg-red-500', pulse: true };
+    if (stock < 50) return { color: 'bg-amber-500', pulse: false };
+    return { color: 'bg-emerald-500', pulse: false };
+};
+
+const ProductCard = ({ item }) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const status = getStockStatus(item.stock);
                     return (
     <div 
         className="card-hover bg-white rounded-2xl shadow-soft overflow-hidden cursor-pointer group"
@@ -861,6 +864,9 @@ useEffect(() => {
                     {item.stock}
                 </div>
             </div>
+        </div>
+    );
+};
             
             {/* 管理員快捷操作 */}
             {isAdmin && (
