@@ -572,6 +572,42 @@ const loadItemRecords = async (itemId) => {
         return [];
     }
 };
+
+            // 重新計算庫存（基於記錄）
+const recalculateStock = async (itemId) => {
+    try {
+        // 獲取所有記錄
+        const { data: records, error: recordsError } = await supabase
+            .from('records')
+            .select('*')
+            .eq('item_id', itemId);
+        
+        if (recordsError) throw recordsError;
+        
+        // 計算總庫存
+        let totalStock = 0;
+        records.forEach(record => {
+            if (record.type === 'in') {
+                totalStock += record.quantity;
+            } else {
+                totalStock -= record.quantity;
+            }
+        });
+        
+        // 更新庫存
+        const { error: updateError } = await supabase
+            .from('inventory')
+            .update({ stock: Math.max(0, totalStock) })
+            .eq('id', itemId);
+        
+        if (updateError) throw updateError;
+        
+        return totalStock;
+    } catch (error) {
+        console.error('重新計算庫存失敗:', error);
+        return null;
+    }
+};
             
             // 初始載入
             useEffect(() => {
@@ -582,34 +618,68 @@ const loadItemRecords = async (itemId) => {
             
             // Realtime 監聽器 - 即時同步資料
 useEffect(() => {
-    const inventorySubscription = supabase
-        .channel('inventory-changes')
+    // 監聽庫存變化
+    const inventoryChannel = supabase
+        .channel('public:inventory')
         .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'inventory' },
-            (payload) => {
+            async (payload) => {
                 console.log('庫存變化:', payload);
-                loadInventory();
-            }
-        )
-        .subscribe();
-
-    const recordsSubscription = supabase
-        .channel('records-changes')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'records' },
-            (payload) => {
-                console.log('記錄變化:', payload);
-                if (selectedItem) {
-                    loadItemRecords(selectedItem.id).then(records => {
-                        setSelectedItem(prev => ({ ...prev, records }));
-                    });
+                
+                // 重新載入庫存
+                await loadInventory();
+                
+                // 如果正在查看的商品被更新，同步更新
+                if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
+                    const records = await loadItemRecords(selectedItem.id);
+                    setSelectedItem(prev => ({ 
+                        ...payload.new, 
+                        records 
+                    }));
                 }
             }
         )
         .subscribe();
 
-    const operatorsSubscription = supabase
-        .channel('operators-changes')
+    // 監聽記錄變化（全局）
+    const recordsChannel = supabase
+        .channel('public:records')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'records' },
+            async (payload) => {
+                console.log('記錄變化（全局）:', payload);
+                
+                // 當記錄變化時，重新計算並更新相關商品的庫存
+                if (payload.new || payload.old) {
+                    const itemId = payload.new?.item_id || payload.old?.item_id;
+                    
+                    // 重新載入庫存（這會觸發庫存表的更新）
+                    await loadInventory();
+                    
+                    // 如果影響的是當前查看的商品
+                    if (selectedItem && itemId === selectedItem.id) {
+                        const records = await loadItemRecords(itemId);
+                        const { data: itemData } = await supabase
+                            .from('inventory')
+                            .select('*')
+                            .eq('id', itemId)
+                            .single();
+                        
+                        if (itemData) {
+                            setSelectedItem({ 
+                                ...itemData, 
+                                records 
+                            });
+                        }
+                    }
+                }
+            }
+        )
+        .subscribe();
+
+    // 監聽操作人員變化
+    const operatorsChannel = supabase
+        .channel('public:operators')
         .on('postgres_changes',
             { event: '*', schema: 'public', table: 'operators' },
             (payload) => {
@@ -619,8 +689,9 @@ useEffect(() => {
         )
         .subscribe();
 
-    const categoriesSubscription = supabase
-        .channel('categories-changes')
+    // 監聽類別變化
+    const categoriesChannel = supabase
+        .channel('public:categories')
         .on('postgres_changes',
             { event: '*', schema: 'public', table: 'categories' },
             (payload) => {
@@ -631,12 +702,12 @@ useEffect(() => {
         .subscribe();
 
     return () => {
-        inventorySubscription.unsubscribe();
-        recordsSubscription.unsubscribe();
-        operatorsSubscription.unsubscribe();
-        categoriesSubscription.unsubscribe();
+        inventoryChannel.unsubscribe();
+        recordsChannel.unsubscribe();
+        operatorsChannel.unsubscribe();
+        categoriesChannel.unsubscribe();
     };
-}, [selectedItem]);
+}, [selectedItem?.id]);
             
             // 篩選邏輯
             const filteredInventory = useMemo(() => {
@@ -1071,6 +1142,49 @@ useEffect(() => {
         operator: ''
     });
     const [records, setRecords] = useState(selectedItem?.records || []);
+
+                // 監聽記錄變化並更新庫存
+useEffect(() => {
+    if (!selectedItem) return;
+    
+    const recordsChannel = supabase
+        .channel(`records-${selectedItem.id}`)
+        .on('postgres_changes', 
+            { 
+                event: '*', 
+                schema: 'public', 
+                table: 'records',
+                filter: `item_id=eq.${selectedItem.id}`
+            },
+            async (payload) => {
+                console.log('記錄變化:', payload);
+                
+                // 重新載入記錄和重新計算庫存
+                const updatedRecords = await loadItemRecords(selectedItem.id);
+                setRecords(updatedRecords);
+                
+                // 重新載入該商品的最新資料
+                const { data: itemData } = await supabase
+                    .from('inventory')
+                    .select('*')
+                    .eq('id', selectedItem.id)
+                    .single();
+                
+                if (itemData) {
+                    setSelectedItem(prev => ({ 
+                        ...prev, 
+                        ...itemData,
+                        records: updatedRecords 
+                    }));
+                }
+            }
+        )
+        .subscribe();
+    
+    return () => {
+        recordsChannel.unsubscribe();
+    };
+}, [selectedItem?.id]);
 
     if (!selectedItem) return null;
     
