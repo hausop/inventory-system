@@ -580,6 +580,64 @@ const loadItemRecords = async (itemId) => {
                 loadOperators();
             }, []);
             
+            // Realtime 監聽器 - 即時同步資料
+useEffect(() => {
+    const inventorySubscription = supabase
+        .channel('inventory-changes')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'inventory' },
+            (payload) => {
+                console.log('庫存變化:', payload);
+                loadInventory();
+            }
+        )
+        .subscribe();
+
+    const recordsSubscription = supabase
+        .channel('records-changes')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'records' },
+            (payload) => {
+                console.log('記錄變化:', payload);
+                if (selectedItem) {
+                    loadItemRecords(selectedItem.id).then(records => {
+                        setSelectedItem(prev => ({ ...prev, records }));
+                    });
+                }
+            }
+        )
+        .subscribe();
+
+    const operatorsSubscription = supabase
+        .channel('operators-changes')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'operators' },
+            (payload) => {
+                console.log('操作人員變化:', payload);
+                loadOperators();
+            }
+        )
+        .subscribe();
+
+    const categoriesSubscription = supabase
+        .channel('categories-changes')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'categories' },
+            (payload) => {
+                console.log('類別變化:', payload);
+                loadCategories();
+            }
+        )
+        .subscribe();
+
+    return () => {
+        inventorySubscription.unsubscribe();
+        recordsSubscription.unsubscribe();
+        operatorsSubscription.unsubscribe();
+        categoriesSubscription.unsubscribe();
+    };
+}, [selectedItem]);
+            
             // 篩選邏輯
             const filteredInventory = useMemo(() => {
                 return inventory.filter(item => {
@@ -1253,6 +1311,396 @@ const loadItemRecords = async (itemId) => {
         </div>
     );
 };
+
+            // 編輯商品模態框
+const EditItemModal = () => {
+    const [editForm, setEditForm] = useState({
+        name: editingItem?.name || '',
+        location: editingItem?.location || '',
+        category: editingItem?.category || '',
+        specifications: editingItem?.specifications || '',
+        unit_price: editingItem?.unit_price || ''
+    });
+    
+    const handleSave = async () => {
+        try {
+            const { error } = await supabase
+                .from('inventory')
+                .update({
+                    name: editForm.name,
+                    location: editForm.location,
+                    category: editForm.category,
+                    specifications: editForm.specifications,
+                    unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
+                })
+                .eq('id', editingItem.id);
+            
+            if (error) throw error;
+            
+            await loadInventory();
+            if (selectedItem && selectedItem.id === editingItem.id) {
+                setSelectedItem(prev => ({ ...prev, ...editForm }));
+            }
+            setEditingItem(null);
+            alert('更新成功！');
+        } catch (error) {
+            console.error('更新失敗:', error);
+            alert('更新失敗');
+        }
+    };
+    
+    if (!editingItem) return null;
+    
+    return (
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto slide-up">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">編輯商品</h2>
+                    <button onClick={() => setEditingItem(null)}>
+                        <Icons.X size={24} className="text-gray-500" />
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱</label>
+                        <input
+                            type="text"
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
+                        <select
+                            value={editForm.category}
+                            onChange={(e) => setEditForm({...editForm, category: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        >
+                            <option value="">請選擇類別</option>
+                            {categories.map(category => (
+                                <option key={category.id} value={category.name}>{category.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
+                        <textarea
+                            value={editForm.location}
+                            onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            rows="3"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
+                        <input
+                            type="text"
+                            value={editForm.specifications}
+                            onChange={(e) => setEditForm({...editForm, specifications: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
+                        <input
+                            type="number"
+                            value={editForm.unit_price}
+                            onChange={(e) => setEditForm({...editForm, unit_price: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        />
+                    </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                    <button
+                        onClick={handleSave}
+                        className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                    >
+                        保存
+                    </button>
+                    <button
+                        onClick={() => setEditingItem(null)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+            // 新增商品模態框
+const AddItemModal = () => {
+    const [itemForm, setItemForm] = useState({
+        name: '',
+        category: '',
+        location: '',
+        specifications: '',
+        unit_price: '',
+        stock: '0'
+    });
+    
+    const handleAdd = async () => {
+        if (!itemForm.name.trim()) {
+            alert('請填寫商品名稱');
+            return;
+        }
+        
+        try {
+            const { data, error } = await supabase
+                .from('inventory')
+                .insert({
+                    name: itemForm.name,
+                    stock: parseInt(itemForm.stock) || 0,
+                    location: itemForm.location,
+                    category: itemForm.category,
+                    specifications: itemForm.specifications,
+                    unit_price: parseInt(itemForm.unit_price) || null
+                })
+                .select()
+                .single();
+            
+            if (error) throw error;
+            
+            // 如果有初始庫存，新增一筆入庫記錄
+            if (itemForm.stock > 0) {
+                await supabase
+                    .from('records')
+                    .insert({
+                        item_id: data.id,
+                        type: 'in',
+                        quantity: parseInt(itemForm.stock),
+                        operator: '系統',
+                        note: '商品初始庫存',
+                        operation_date: new Date().toISOString()
+                    });
+            }
+            
+            await loadInventory();
+            setShowAddItemModal(false);
+            alert('商品新增成功！');
+        } catch (error) {
+            console.error('新增失敗:', error);
+            alert('新增失敗');
+        }
+    };
+    
+    if (!showAddItemModal) return null;
+    
+    return (
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto slide-up">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">新增商品</h2>
+                    <button onClick={() => setShowAddItemModal(false)}>
+                        <Icons.X size={24} className="text-gray-500" />
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱 *</label>
+                        <input
+                            type="text"
+                            value={itemForm.name}
+                            onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            placeholder="請輸入商品名稱"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
+                        <select
+                            value={itemForm.category}
+                            onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                        >
+                            <option value="">請選擇類別</option>
+                            {categories.map(category => (
+                                <option key={category.id} value={category.name}>{category.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
+                        <textarea
+                            value={itemForm.location}
+                            onChange={(e) => setItemForm({...itemForm, location: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            placeholder="請輸入存放位置"
+                            rows="3"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">初始庫存</label>
+                        <input
+                            type="number"
+                            value={itemForm.stock}
+                            onChange={(e) => setItemForm({...itemForm, stock: e.target.value})}
+                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            min="0"
+                        />
+                    </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6">
+                    <button
+                        onClick={handleAdd}
+                        className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                    >
+                        新增
+                    </button>
+                    <button
+                        onClick={() => setShowAddItemModal(false)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
+                    >
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 類別管理模態框
+const CategoryModal = () => {
+    const [newCategory, setNewCategory] = useState('');
+    
+    const addCategory = async () => {
+        if (newCategory.trim()) {
+            try {
+                await supabase.from('categories').insert({ name: newCategory.trim() });
+                await loadCategories();
+                setNewCategory('');
+            } catch (error) {
+                console.error('新增類別失敗:', error);
+            }
+        }
+    };
+    
+    if (!showCategoryModal) return null;
+    
+    return (
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-md slide-up">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">管理類別</h2>
+                    <button onClick={() => setShowCategoryModal(false)}>
+                        <Icons.X size={24} className="text-gray-500" />
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            placeholder="新增類別"
+                        />
+                        <button
+                            onClick={addCategory}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+                        >
+                            新增
+                        </button>
+                    </div>
+                    
+                    <div className="max-h-60 overflow-y-auto">
+                        {categories.map(category => (
+                            <div key={category.id} className="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
+                                <span>{category.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                <button
+                    onClick={() => setShowCategoryModal(false)}
+                    className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
+                >
+                    完成
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// 操作人員管理模態框
+const OperatorModal = () => {
+    const [newOperator, setNewOperator] = useState('');
+    
+    const addOperator = async () => {
+        if (newOperator.trim()) {
+            try {
+                await supabase.from('operators').insert({ name: newOperator.trim() });
+                await loadOperators();
+                setNewOperator('');
+            } catch (error) {
+                console.error('新增操作人員失敗:', error);
+            }
+        }
+    };
+    
+    if (!showOperatorModal) return null;
+    
+    return (
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-md slide-up">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">管理操作人員</h2>
+                    <button onClick={() => setShowOperatorModal(false)}>
+                        <Icons.X size={24} className="text-gray-500" />
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newOperator}
+                            onChange={(e) => setNewOperator(e.target.value)}
+                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
+                            placeholder="新增操作人員"
+                        />
+                        <button
+                            onClick={addOperator}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+                        >
+                            新增
+                        </button>
+                    </div>
+                    
+                    <div className="max-h-60 overflow-y-auto">
+                        {operators.map(operator => (
+                            <div key={operator.id} className="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
+                                <span>{operator.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                <button
+                    onClick={() => setShowOperatorModal(false)}
+                    className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200"
+                >
+                    完成
+                </button>
+            </div>
+        </div>
+    );
+};
             
             // 密碼模態框
             const PasswordModal = () => {
@@ -1323,6 +1771,10 @@ const loadItemRecords = async (itemId) => {
                     <FAB />
                     <BottomNav />
                     <PasswordModal />
+                    <EditItemModal />
+                    <AddItemModal />
+                    <CategoryModal />
+                    <OperatorModal />
                 </>
             );
         };
