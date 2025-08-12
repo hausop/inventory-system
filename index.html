@@ -2,2291 +2,1129 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>庫存管理系統</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>庫存管理系統 - Modern UI</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body { 
-            margin: 0; 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background-color: #f9fafb;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
         }
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-size: 18px;
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #FAFAF8;
+            z-index: -1;
+        }
+        
+        /* 毛玻璃效果 */
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        /* 深層陰影 */
+        .shadow-soft {
+            box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.05),
+                        0 0 40px 0 rgba(0, 0, 0, 0.02);
+        }
+        
+        .shadow-soft-lg {
+            box-shadow: 0 0 30px 0 rgba(0, 0, 0, 0.08),
+                        0 0 50px 0 rgba(0, 0, 0, 0.04);
+        }
+        
+        /* 卡片懸浮效果 */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+        }
+        
+        /* 呼吸燈效果 */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* 滑動動畫 */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        /* 彈跳動畫 */
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .bounce-in {
+            animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        /* iOS Toggle 開關 */
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background-color: #e5e7eb;
+            border-radius: 31px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        
+        .toggle-switch.active {
+            background-color: #8b5cf6;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 27px;
+            height: 27px;
+            border-radius: 27px;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
+        
+        /* 分段控制器 */
+        .segmented-control {
+            display: inline-flex;
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 2px;
+            position: relative;
+        }
+        
+        .segmented-control-item {
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
             color: #6b7280;
-        }
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            z-index: 1;
+            position: relative;
         }
         
-        /* 防止 iOS 上的輸入框縮放 - 關鍵設定 */
-        input, textarea, select {
-            font-size: 16px !important;
+        .segmented-control-item.active {
+            color: white;
         }
         
-        /* 圖片上傳按鈕樣式 */
-        .image-upload-area {
-            border: 2px dashed #cbd5e0;
-            border-radius: 0.5rem;
-            padding: 2rem;
-            text-align: center;
+        .segmented-control-indicator {
+            position: absolute;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            top: 2px;
+            bottom: 2px;
+        }
+        
+        /* FAB 按鈕 */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .fab-menu {
+            position: fixed;
+            bottom: 88px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 999;
+        }
+        
+        .fab-menu-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s;
+        }
+        
+        .fab-menu-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 骨架屏 */
+        @keyframes skeleton {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton 1.5s infinite;
+        }
+        
+        /* 底部導航（手機） */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: none;
+            z-index: 100;
+        }
+        
+        @media (max-width: 640px) {
+            .bottom-nav {
+                display: flex;
+                justify-content: space-around;
+                padding: 8px 0;
+            }
+            
+            .fab {
+                bottom: 70px;
+            }
+            
+            .fab-menu {
+                bottom: 134px;
+            }
+        }
+        
+        .bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
             cursor: pointer;
             transition: all 0.3s;
         }
-        .image-upload-area:hover {
-            border-color: #4299e1;
-            background-color: #f7fafc;
+        
+        .bottom-nav-item.active {
+            color: #8b5cf6;
         }
         
-        /* 圖片預覽容器 - 正方形 */
-        .image-preview-container {
-            width: 100%;
-            aspect-ratio: 1/1;
-            position: relative;
-            overflow: hidden;
-            border-radius: 0.5rem;
-            background-color: #f3f4f6;
+        /* 搜索框動畫 */
+        .search-box {
+            transition: all 0.3s;
         }
         
-        /* 可拖動的圖片 */
-        .draggable-image {
-            position: absolute;
-            cursor: move;
-            user-select: none;
-            -webkit-user-drag: none;
-            transition: none;
+        .search-box:focus-within {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
         
-        .draggable-image.dragging {
-            cursor: grabbing;
+        /* 數字變化動畫 */
+        @keyframes numberChange {
+            0% { transform: scale(1.2); color: #8b5cf6; }
+            100% { transform: scale(1); }
         }
         
-        /* 圖片控制按鈕組 */
-        .image-controls {
-            position: absolute;
-            top: 8px;
-            right: 8px;
+        .number-change {
+            animation: numberChange 0.3s ease-out;
+        }
+        
+        /* 載入動畫 */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 空狀態插畫 */
+        .empty-state {
             display: flex;
-            gap: 8px;
-            z-index: 10;
-        }
-        
-        /* 縮放滑桿 */
-        .zoom-slider {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            right: 8px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            padding: 60px 20px;
         }
         
-        .zoom-slider input[type="range"] {
-            flex: 1;
-            height: 4px;
+        /* 防止 iOS 輸入框縮放 */
+        input, textarea, select {
+            font-size: 16px !important;
+            -webkit-appearance: none;
+            border-radius: 12px;
         }
         
-        /* 裁切指示框 */
-        .crop-overlay {
-            position: absolute;
-            inset: 0;
-            border: 2px solid rgba(59, 130, 246, 0.5);
-            pointer-events: none;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
-    
-@media (max-width: 640px) {
-  table {
-    min-width: 600px;
-  }
-
-  th.date-col, 
-  td.date-col {
-    width: 80px !important;
-  }
-}
-
-/* === UI Enhancements === */
-
-/* General Buttons */
-button, .app-button {
-  border-radius: 9999px;
-  padding: 0.5rem 1.2rem;
-  font-weight: 500;
-  transition: all 0.25s ease;
-}
-
-/* Primary Gradient Button */
-.app-button-primary {
-  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-  color: white !important;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-.app-button-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Inputs */
-input, select, textarea {
-  border-radius: 0.75rem !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-  padding: 0.5rem 0.75rem;
-}
-
-/* Card containers */
-.card {
-  border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  padding: 1.5rem;
-  background: white;
-}
-
-/* Table headers */
-table thead {
-  background-color: #f8fafc;
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-  table {
-    min-width: 600px;
-  }
-  th.date-col, td.date-col {
-    width: 80px !important;
-  }
-}
-
-</style>
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6b4298 100%);
+        }
+        
+        /* 標籤樣式 */
+        .tag-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .tag-pill:hover {
+            transform: scale(1.05);
+        }
+        
+        /* 模態框背景 */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+    </style>
 </head>
 <body>
     <div id="root">
-        <div class="loading">載入中...</div>
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="loader"></div>
+        </div>
     </div>
     
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, memo } = React;
+        const { useState, useEffect, useRef, useCallback, memo, useMemo } = React;
         
-        // 🔧 請在這裡填入您的 Supabase 設定
+        // 🔧 Supabase 設定
         const SUPABASE_URL = 'https://sfgvmpsmndyogqrdtoar.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZ3ZtcHNtbmR5b2dxcmR0b2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzNTU2OTEsImV4cCI6MjA2OTkzMTY5MX0.uCWRlPtiYqR-_7jWdQd9RzaBk0SHzRn_0dWbWG0M-J0';
         
-        // 初始化 Supabase 客戶端
+        // 初始化 Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // 圖示組件
-        const Package = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-        );
+        // 現代化圖示組件
+        const Icons = {
+            Package: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            ),
+            Plus: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+            ),
+            Grid: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+            ),
+            List: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            ),
+            Search: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            ),
+            Settings: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            ),
+            Tag: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+            ),
+            Users: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            ),
+            Home: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            ),
+            ChevronLeft: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+            ),
+            X: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            ),
+            Edit: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            ),
+            Trash: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            ),
+            Camera: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            ),
+            Archive: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+            ),
+            TrendingUp: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            ),
+            TrendingDown: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                </svg>
+            )
+        };
         
-        const Plus = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-        );
-        
-        const Edit3 = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-        );
-        
-        const Save = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-        );
-        
-        const X = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        );
-        
-        const FileText = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-        );
-
-        const Settings = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        );
-        
-        const Camera = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        );
-        
-        const Tag = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-            </svg>
-        );
-        
-        const Users = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-        );
-
+        // 主應用程式
         const InventoryManager = () => {
-          const [currentView, setCurrentView] = useState('overview');
-          const [selectedItem, setSelectedItem] = useState(null);
-          const [isAdmin, setIsAdmin] = useState(false);
-          const [adminPassword, setAdminPassword] = useState('');
-          const [showPasswordModal, setShowPasswordModal] = useState(false);
-          const [editingItem, setEditingItem] = useState(null);
-          const [showAddItemModal, setShowAddItemModal] = useState(false);
-          const [showCategoryModal, setShowCategoryModal] = useState(false);
-          const [showOperatorModal, setShowOperatorModal] = useState(false);
-          const [filterCategory, setFilterCategory] = useState('');
-          const [inventory, setInventory] = useState([]);
-          const [loading, setLoading] = useState(true);
-          const [operators, setOperators] = useState([]);
-          const [categories, setCategories] = useState([]);
-          const fileInputRef = useRef(null);
-
-          // 從 Supabase 載入操作人員
-          const loadOperators = async () => {
-            try {
-              const { data, error } = await supabase
-                .from('operators')
-                .select('*')
-                .order('name', { ascending: true });
-              
-              if (error) {
-                console.error('載入操作人員失敗:', error);
-                return;
-              }
-              
-              setOperators(data || []);
-            } catch (error) {
-              console.error('載入操作人員錯誤:', error);
-            }
-          };
-
-          // 從 Supabase 載入類別
-          const loadCategories = async () => {
-            try {
-              const { data, error } = await supabase
-                .from('categories')
-                .select('*')
-                .order('name', { ascending: true });
-              
-              if (error) {
-                console.error('載入類別失敗:', error);
-                return;
-              }
-              
-              setCategories(data || []);
-            } catch (error) {
-              console.error('載入類別錯誤:', error);
-            }
-          };
-
-          // 新增操作人員到 Supabase
-          const addOperatorToDb = async (name) => {
-            try {
-              const { data, error } = await supabase
-                .from('operators')
-                .insert({ name })
-                .select()
-                .single();
-              
-              if (error) {
-                if (error.code === '23505') {
-                  alert('此操作人員已存在');
-                } else {
-                  console.error('新增操作人員失敗:', error);
-                  alert('新增失敗');
-                }
-                return false;
-              }
-              
-              await loadOperators();
-              return true;
-            } catch (error) {
-              console.error('新增操作人員錯誤:', error);
-              return false;
-            }
-          };
-
-          // 刪除操作人員
-          const deleteOperatorFromDb = async (id) => {
-            try {
-              const { error } = await supabase
-                .from('operators')
-                .delete()
-                .eq('id', id);
-              
-              if (error) {
-                console.error('刪除操作人員失敗:', error);
-                alert('刪除失敗');
-                return;
-              }
-              
-              await loadOperators();
-            } catch (error) {
-              console.error('刪除操作人員錯誤:', error);
-            }
-          };
-
-          // 新增類別到 Supabase
-          const addCategoryToDb = async (name) => {
-            try {
-              const { data, error } = await supabase
-                .from('categories')
-                .insert({ name })
-                .select()
-                .single();
-              
-              if (error) {
-                if (error.code === '23505') {
-                  alert('此類別已存在');
-                } else {
-                  console.error('新增類別失敗:', error);
-                  alert('新增失敗');
-                }
-                return false;
-              }
-              
-              await loadCategories();
-              return true;
-            } catch (error) {
-              console.error('新增類別錯誤:', error);
-              return false;
-            }
-          };
-
-          // 刪除類別
-          const deleteCategoryFromDb = async (id) => {
-            try {
-              const { error } = await supabase
-                .from('categories')
-                .delete()
-                .eq('id', id);
-              
-              if (error) {
-                console.error('刪除類別失敗:', error);
-                alert('刪除失敗');
-                return;
-              }
-              
-              await loadCategories();
-            } catch (error) {
-              console.error('刪除類別錯誤:', error);
-            }
-          };
-
-          // 上傳圖片到 Supabase Storage
-          const uploadImage = async (file, itemId) => {
-            try {
-              const fileExt = file.name.split('.').pop();
-              const fileName = `${itemId}_${Date.now()}.${fileExt}`;
-              const filePath = `products/${fileName}`;
-
-              const { data, error } = await supabase.storage
-                .from('product-images')
-                .upload(filePath, file, {
-                  cacheControl: '3600',
-                  upsert: true
-                });
-
-              if (error) {
-                console.error('上傳圖片失敗:', error);
-                alert('圖片上傳失敗');
-                return null;
-              }
-
-              // 取得公開 URL
-              const { data: { publicUrl } } = supabase.storage
-                .from('product-images')
-                .getPublicUrl(filePath);
-
-              return publicUrl;
-            } catch (error) {
-              console.error('上傳圖片錯誤:', error);
-              return null;
-            }
-          };
-
-          // 刪除舊圖片
-          const deleteOldImage = async (imageUrl) => {
-            if (!imageUrl) return;
+            const [currentView, setCurrentView] = useState('overview');
+            const [selectedItem, setSelectedItem] = useState(null);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showPasswordModal, setShowPasswordModal] = useState(false);
+            const [showFabMenu, setShowFabMenu] = useState(false);
+            const [viewMode, setViewMode] = useState('grid'); // grid or list
+            const [searchQuery, setSearchQuery] = useState('');
+            const [filterCategory, setFilterCategory] = useState('全部');
+            const [inventory, setInventory] = useState([]);
+            const [categories, setCategories] = useState([]);
+            const [operators, setOperators] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showAddItemModal, setShowAddItemModal] = useState(false);
+            const [showCategoryModal, setShowCategoryModal] = useState(false);
+            const [showOperatorModal, setShowOperatorModal] = useState(false);
+            const [editingItem, setEditingItem] = useState(null);
             
-            try {
-              // 從 URL 提取檔案路徑
-              const urlParts = imageUrl.split('/');
-              const fileName = urlParts[urlParts.length - 1];
-              const filePath = `products/${fileName}`;
-              
-              await supabase.storage
-                .from('product-images')
-                .remove([filePath]);
-            } catch (error) {
-              console.error('刪除舊圖片錯誤:', error);
-            }
-          };
-
-          // 處理瀏覽器上一頁功能
-          useEffect(() => {
-            const handlePopState = (event) => {
-              if (currentView === 'detail') {
+            // 載入資料函數
+            const loadInventory = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('inventory')
+                        .select('*')
+                        .order('id', { ascending: true });
+                    
+                    if (error) throw error;
+                    setInventory(data || []);
+                } catch (error) {
+                    console.error('載入庫存失敗:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const loadCategories = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('categories')
+                        .select('*')
+                        .order('name', { ascending: true });
+                    
+                    if (error) throw error;
+                    setCategories(data || []);
+                } catch (error) {
+                    console.error('載入類別失敗:', error);
+                }
+            };
+            
+            const loadOperators = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('operators')
+                        .select('*')
+                        .order('name', { ascending: true });
+                    
+                    if (error) throw error;
+                    setOperators(data || []);
+                } catch (error) {
+                    console.error('載入操作人員失敗:', error);
+                }
+            };
+            
+            // 初始載入
+            useEffect(() => {
+                loadInventory();
+                loadCategories();
+                loadOperators();
+            }, []);
+            
+            // 篩選邏輯
+            const filteredInventory = useMemo(() => {
+                return inventory.filter(item => {
+                    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesCategory = filterCategory === '全部' || item.category === filterCategory;
+                    return matchesSearch && matchesCategory;
+                });
+            }, [inventory, searchQuery, filterCategory]);
+            
+            // 頂部導航欄
+            const TopNavBar = () => (
+                <div className="fixed top-0 left-0 right-0 glass-morphism shadow-soft z-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            {/* Logo區域 */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
+                                    <Icons.Package size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-bold text-gray-800">庫存管理</h1>
+                                    <p className="text-xs text-gray-500">智能倉儲系統</p>
+                                </div>
+                            </div>
+                            
+                            {/* 中間搜索框 */}
+                            <div className="hidden md:block flex-1 max-w-md mx-8">
+                                <div className="search-box relative">
+                                    <Icons.Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="搜尋商品..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-all"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* 右側控制區 */}
+                            <div className="flex items-center gap-3">
+                                {/* 視圖切換 */}
+                                <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                                    >
+                                        <Icons.Grid size={18} className={viewMode === 'grid' ? 'text-purple-600' : 'text-gray-500'} />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                                    >
+                                        <Icons.List size={18} className={viewMode === 'list' ? 'text-purple-600' : 'text-gray-500'} />
+                                    </button>
+                                </div>
+                                
+                                {/* 管理模式開關 */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
+                                    <div 
+                                        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
+                                        onClick={() => isAdmin ? setIsAdmin(false) : setShowPasswordModal(true)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+            
+            // 分段控制器（類別篩選）
+            const CategoryFilter = () => {
+                const allCategories = ['全部', ...categories.map(c => c.name)];
+                const [indicatorStyle, setIndicatorStyle] = useState({});
+                const itemRefs = useRef({});
+                
+                useEffect(() => {
+                    const activeItem = itemRefs.current[filterCategory];
+                    if (activeItem) {
+                        setIndicatorStyle({
+                            left: activeItem.offsetLeft + 'px',
+                            width: activeItem.offsetWidth + 'px'
+                        });
+                    }
+                }, [filterCategory]);
+                
+                return (
+                    <div className="overflow-x-auto pb-2">
+                        <div className="segmented-control inline-flex min-w-max">
+                            <div className="segmented-control-indicator" style={indicatorStyle} />
+                            {allCategories.map(category => (
+                                <div
+                                    key={category}
+                                    ref={el => itemRefs.current[category] = el}
+                                    className={`segmented-control-item ${filterCategory === category ? 'active' : ''}`}
+                                    onClick={() => setFilterCategory(category)}
+                                >
+                                    {category}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+            
+            // 商品卡片
+            const ProductCard = ({ item }) => {
+                const [imageLoaded, setImageLoaded] = useState(false);
+                
+                const getStockStatus = (stock) => {
+                    if (stock === 0) return { color: 'bg-gray-500', pulse: false };
+                    if (stock < 10) return { color: 'bg-red-500', pulse: true };
+                    if (stock < 50) return { color: 'bg-amber-500', pulse: false };
+                    return { color: 'bg-emerald-500', pulse: false };
+                };
+                
+                const status = getStockStatus(item.stock);
+                
+                return (
+                    <div 
+                        className="card-hover bg-white rounded-2xl shadow-soft overflow-hidden cursor-pointer group"
+                        onClick={() => navigateToDetail(item)}
+                    >
+                        {/* 類別標籤條 */}
+                        <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-700" />
+                        
+                        {/* 圖片區域 */}
+                        <div className="aspect-square bg-gray-50 relative overflow-hidden">
+                            {!imageLoaded && (
+                                <div className="absolute inset-0 skeleton" />
+                            )}
+                            {item.image_url ? (
+                                <img 
+                                    src={item.image_url} 
+                                    alt={item.name}
+                                    className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${imageLoaded ? '' : 'opacity-0'}`}
+                                    onLoad={() => setImageLoaded(true)}
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Icons.Package size={48} className="text-gray-300" />
+                                </div>
+                            )}
+                            
+                            {/* 庫存標籤 */}
+                            <div className="absolute top-3 right-3">
+                                <div className={`${status.color} text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${status.pulse ? 'pulse-soft' : ''}`}>
+                                    {item.stock}
+                                </div>
+                            </div>
+                            
+                            {/* 管理員快捷操作 */}
+                            {isAdmin && (
+                                <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingItem(item);
+                                        }}
+                                        className="bg-white p-2 rounded-full shadow-md hover:shadow-lg transition-all mr-2"
+                                    >
+                                        <Icons.Edit size={16} className="text-gray-600" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* 資訊區域 */}
+                        <div className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                                <h3 className="font-semibold text-gray-800 flex-1 line-clamp-2">
+                                    {item.name}
+                                </h3>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <span className="tag-pill bg-purple-100 text-purple-700">
+                                    {item.category || '未分類'}
+                                </span>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-400">
+                                📍 {item.location || '未設定'}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+            
+            // 列表視圖項目
+            const ProductListItem = ({ item }) => {
+                const getStockStatus = (stock) => {
+                    if (stock === 0) return { color: 'bg-gray-500', text: '缺貨' };
+                    if (stock < 10) return { color: 'bg-red-500', text: '庫存不足' };
+                    if (stock < 50) return { color: 'bg-amber-500', text: '庫存偏低' };
+                    return { color: 'bg-emerald-500', text: '庫存充足' };
+                };
+                
+                const status = getStockStatus(item.stock);
+                
+                return (
+                    <div 
+                        className="bg-white rounded-xl shadow-soft p-4 mb-3 hover:shadow-soft-lg transition-all cursor-pointer"
+                        onClick={() => navigateToDetail(item)}
+                    >
+                        <div className="flex items-center gap-4">
+                            {/* 圖片 */}
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                {item.image_url ? (
+                                    <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <Icons.Package size={24} className="text-gray-400" />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* 資訊 */}
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-gray-800">{item.name}</h3>
+                                <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-sm text-gray-500">{item.category || '未分類'}</span>
+                                    <span className="text-sm text-gray-400">•</span>
+                                    <span className="text-sm text-gray-500">📍 {item.location || '未設定'}</span>
+                                </div>
+                            </div>
+                            
+                            {/* 庫存狀態 */}
+                            <div className="text-right">
+                                <div className="text-2xl font-bold text-gray-800">{item.stock}</div>
+                                <div className={`text-xs ${status.color} bg-opacity-10 px-2 py-1 rounded-full inline-block`}>
+                                    <span className={`${status.color.replace('bg-', 'text-')}`}>{status.text}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+            
+            // 空狀態
+            const EmptyState = () => (
+                <div className="empty-state">
+                    <div className="w-32 h-32 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                        <Icons.Package size={64} className="text-purple-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">尚無商品資料</h3>
+                    <p className="text-gray-500 mb-6">開始新增您的第一個商品吧！</p>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowAddItemModal(true)}
+                            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                        >
+                            新增商品
+                        </button>
+                    )}
+                </div>
+            );
+            
+            // FAB 浮動按鈕
+            const FAB = () => (
+                <>
+                    {/* FAB 選單 */}
+                    {showFabMenu && isAdmin && (
+                        <div className="fab-menu slide-up">
+                            <div className="fab-menu-item" onClick={() => {
+                                setShowOperatorModal(true);
+                                setShowFabMenu(false);
+                            }}>
+                                <Icons.Users size={20} className="text-purple-600" />
+                            </div>
+                            <div className="fab-menu-item" onClick={() => {
+                                setShowCategoryModal(true);
+                                setShowFabMenu(false);
+                            }}>
+                                <Icons.Tag size={20} className="text-purple-600" />
+                            </div>
+                            <div className="fab-menu-item" onClick={() => {
+                                setShowAddItemModal(true);
+                                setShowFabMenu(false);
+                            }}>
+                                <Icons.Package size={20} className="text-purple-600" />
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* 主 FAB 按鈕 */}
+                    {isAdmin && (
+                        <div 
+                            className="fab"
+                            onClick={() => setShowFabMenu(!showFabMenu)}
+                        >
+                            <Icons.Plus 
+                                size={24} 
+                                className={`transition-transform duration-300 ${showFabMenu ? 'rotate-45' : ''}`}
+                            />
+                        </div>
+                    )}
+                </>
+            );
+            
+            // 底部導航（手機）
+            const BottomNav = () => (
+                <div className="bottom-nav glass-morphism">
+                    <div className={`bottom-nav-item ${currentView === 'overview' ? 'active' : ''}`}
+                         onClick={() => setCurrentView('overview')}>
+                        <Icons.Home size={20} />
+                        <span className="text-xs mt-1">首頁</span>
+                    </div>
+                    <div className="bottom-nav-item">
+                        <Icons.Search size={20} />
+                        <span className="text-xs mt-1">搜尋</span>
+                    </div>
+                    <div className="bottom-nav-item">
+                        <Icons.Archive size={20} />
+                        <span className="text-xs mt-1">庫存</span>
+                    </div>
+                    <div className="bottom-nav-item">
+                        <Icons.Settings size={20} />
+                        <span className="text-xs mt-1">設定</span>
+                    </div>
+                </div>
+            );
+            
+            // 導航函數
+            const navigateToDetail = async (item) => {
+                setSelectedItem(item);
+                setCurrentView('detail');
+                window.history.pushState({ view: 'detail' }, '', `#item-${item.id}`);
+            };
+            
+            const navigateToOverview = () => {
                 setCurrentView('overview');
                 setSelectedItem(null);
-              }
+                window.history.pushState({ view: 'overview' }, '', '#');
             };
-
-            window.addEventListener('popstate', handlePopState);
-            return () => {
-              window.removeEventListener('popstate', handlePopState);
-            };
-          }, [currentView]);
-
-          // 從 Supabase 載入庫存資料
-          const loadInventory = async () => {
-            try {
-              setLoading(true);
-              const { data, error } = await supabase
-                .from('inventory')
-                .select('*')
-                .order('id', { ascending: true });
-              
-              if (error) {
-                console.error('載入庫存失敗:', error);
-                alert('載入資料失敗，請檢查網路連線');
-                return;
-              }
-              
-              setInventory(data || []);
-            } catch (error) {
-              console.error('載入庫存錯誤:', error);
-              alert('連線失敗，請稍後再試');
-            } finally {
-              setLoading(false);
-            }
-          };
-
-          // 載入指定商品的記錄
-          const loadItemRecords = async (itemId) => {
-            try {
-              const { data, error } = await supabase
-                .from('records')
-                .select('*')
-                .eq('item_id', itemId)
-                .order('operation_date', { ascending: false });
-              
-              if (error) {
-                console.error('載入記錄失敗:', error);
-                return [];
-              }
-              
-              return data || [];
-            } catch (error) {
-              console.error('載入記錄錯誤:', error);
-              return [];
-            }
-          };
-
-          // 初始載入資料
-          useEffect(() => {
-            loadInventory();
-            loadOperators();
-            loadCategories();
-          }, []);
-
-          // Realtime 監聽器 - 即時同步資料
-          useEffect(() => {
-            const inventorySubscription = supabase
-              .channel('inventory-changes')
-              .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'inventory' },
-                (payload) => {
-                  console.log('庫存變化:', payload);
-                  loadInventory();
-                }
-              )
-              .subscribe();
-
-            const recordsSubscription = supabase
-              .channel('records-changes')
-              .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'records' },
-                (payload) => {
-                  console.log('記錄變化:', payload);
-                  if (selectedItem) {
-                    loadItemRecords(selectedItem.id).then(records => {
-                      setSelectedItem(prev => ({ ...prev, records }));
-                    });
-                  }
-                }
-              )
-              .subscribe();
-
-            const operatorsSubscription = supabase
-              .channel('operators-changes')
-              .on('postgres_changes',
-                { event: '*', schema: 'public', table: 'operators' },
-                (payload) => {
-                  console.log('操作人員變化:', payload);
-                  loadOperators();
-                }
-              )
-              .subscribe();
-
-            const categoriesSubscription = supabase
-              .channel('categories-changes')
-              .on('postgres_changes',
-                { event: '*', schema: 'public', table: 'categories' },
-                (payload) => {
-                  console.log('類別變化:', payload);
-                  loadCategories();
-                }
-              )
-              .subscribe();
-
-            return () => {
-              inventorySubscription.unsubscribe();
-              recordsSubscription.unsubscribe();
-              operatorsSubscription.unsubscribe();
-              categoriesSubscription.unsubscribe();
-            };
-          }, [selectedItem]);
-
-          // 篩選邏輯
-          const filteredInventory = inventory.filter(item => {
-            const matchesCategory = !filterCategory || item.category === filterCategory;
-            return matchesCategory;
-          });
-
-          // 導航函數
-          const navigateToDetail = async (item) => {
-            setLoading(true);
-            const records = await loadItemRecords(item.id);
-            const itemWithRecords = { ...item, records };
-            setSelectedItem(itemWithRecords);
-            setCurrentView('detail');
-            setLoading(false);
-            window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
-          };
-
-          const navigateToOverview = () => {
-            setCurrentView('overview');
-            setSelectedItem(null);
-            window.history.pushState({ view: 'overview' }, '', '#');
-          };
-
-          const checkAdminPassword = () => {
-            if (adminPassword === 'admin123') {
-              setIsAdmin(true);
-              setShowPasswordModal(false);
-              setAdminPassword('');
-            } else {
-              alert('密碼錯誤！');
-            }
-          };
-
-          // 新增商品
-          const addNewItem = async (itemData, imageFile) => {
-            try {
-              const { data, error } = await supabase
-                .from('inventory')
-                .insert({
-                  name: itemData.name,
-                  stock: parseInt(itemData.stock) || 0,
-                  location: itemData.location,
-                  category: itemData.category,
-                  specifications: itemData.specifications,
-                  unit_price: parseInt(itemData.unit_price) || null,
-                  image_url: null
-                })
-                .select()
-                .single();
-
-              if (error) {
-                console.error('新增商品失敗:', error);
-                alert('新增失敗: ' + error.message);
-                return false;
-              }
-
-              // 上傳圖片（如果有）
-              if (imageFile) {
-                const imageUrl = await uploadImage(imageFile, data.id);
-                if (imageUrl) {
-                  await supabase
-                    .from('inventory')
-                    .update({ image_url: imageUrl })
-                    .eq('id', data.id);
-                }
-              }
-
-              // 如果有初始庫存，新增一筆入庫記錄
-              if (itemData.stock > 0) {
-                await supabase
-                  .from('records')
-                  .insert({
-                    item_id: data.id,
-                    type: 'in',
-                    quantity: parseInt(itemData.stock),
-                    operator: '系統',
-                    note: '商品初始庫存',
-                    operation_date: new Date().toISOString()
-                  });
-              }
-
-              await loadInventory();
-              alert('商品新增成功！');
-              return true;
-            } catch (error) {
-              console.error('新增商品錯誤:', error);
-              alert('操作失敗，請稍後再試');
-              return false;
-            }
-          };
-
-          // 刪除商品
-          const deleteItem = async (itemId) => {
-            if (!confirm('確定要刪除這個商品嗎？相關的出入庫記錄和圖片也會一併刪除。')) {
-              return;
-            }
-
-            try {
-              // 取得商品資訊（包含圖片 URL）
-              const item = inventory.find(i => i.id === itemId);
-              
-              // 刪除圖片
-              if (item && item.image_url) {
-                await deleteOldImage(item.image_url);
-              }
-              
-              // 先刪除相關記錄
-              await supabase.from('records').delete().eq('item_id', itemId);
-              
-              // 再刪除商品
-              const { error } = await supabase
-                .from('inventory')
-                .delete()
-                .eq('id', itemId);
-
-              if (error) {
-                console.error('刪除商品失敗:', error);
-                alert('刪除失敗');
-                return;
-              }
-
-              await loadInventory();
-              alert('商品刪除成功！');
-              
-              // 如果正在查看被刪除的商品，回到總覽
-              if (selectedItem && selectedItem.id === itemId) {
-                navigateToOverview();
-              }
-            } catch (error) {
-              console.error('刪除商品錯誤:', error);
-              alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 新增出入庫記錄
-          const addRecord = async (itemId, record) => {
-            try {
-              // 1. 新增記錄到 records 表
-              const { error: recordError } = await supabase
-                .from('records')
-                .insert({
-                  item_id: itemId,
-                  type: record.type,
-                  quantity: record.quantity,
-                  operator: record.operator,
-                  note: record.note || '',
-                  operation_date: new Date().toISOString()
-                });
-
-              if (recordError) {
-                console.error('新增記錄失敗:', recordError);
-                alert('新增記錄失敗');
-                return;
-              }
-
-              // 2. 更新庫存數量
-              const currentItem = inventory.find(item => item.id === itemId);
-              const newStock = record.type === 'in' 
-                ? currentItem.stock + record.quantity 
-                : Math.max(0, currentItem.stock - record.quantity);
-
-              const { error: updateError } = await supabase
-                .from('inventory')
-                .update({ stock: newStock })
-                .eq('id', itemId);
-
-              if (updateError) {
-                console.error('更新庫存失敗:', updateError);
-                alert('更新庫存失敗');
-                return;
-              }
-
-              // 3. 更新本地狀態
-              setInventory(prev => prev.map(item => 
-                item.id === itemId ? { ...item, stock: newStock } : item
-              ));
-
-              // 4. 重新載入詳細頁面資料
-              if (selectedItem && selectedItem.id === itemId) {
-                const records = await loadItemRecords(itemId);
-                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
-              }
-
-              alert('記錄新增成功！');
-            } catch (error) {
-              console.error('新增記錄錯誤:', error);
-              alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 庫存調整功能
-          const adjustStock = async (itemId, newStock, note = '') => {
-            try {
-              const currentItem = inventory.find(item => item.id === itemId);
-              const difference = newStock - currentItem.stock;
-              
-              if (difference === 0) {
-                alert('庫存數量沒有變化');
-                return;
-              }
-
-              // 新增調整記錄
-              const { error: recordError } = await supabase
-                .from('records')
-                .insert({
-                  item_id: itemId,
-                  type: difference > 0 ? 'in' : 'out',
-                  quantity: Math.abs(difference),
-                  operator: '管理員',
-                  note: note || `庫存調整：${currentItem.stock} → ${newStock}`,
-                  operation_date: new Date().toISOString()
-                });
-
-              if (recordError) {
-                console.error('新增調整記錄失敗:', recordError);
-                alert('調整失敗');
-                return;
-              }
-
-              // 更新庫存
-              const { error: updateError } = await supabase
-                .from('inventory')
-                .update({ stock: newStock })
-                .eq('id', itemId);
-
-              if (updateError) {
-                console.error('更新庫存失敗:', updateError);
-                alert('更新庫存失敗');
-                return;
-              }
-
-              // 更新本地狀態
-              setInventory(prev => prev.map(item => 
-                item.id === itemId ? { ...item, stock: newStock } : item
-              ));
-
-              // 重新載入詳細頁面資料
-              if (selectedItem && selectedItem.id === itemId) {
-                const records = await loadItemRecords(itemId);
-                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
-              }
-
-              alert('庫存調整成功！');
-            } catch (error) {
-              console.error('庫存調整錯誤:', error);
-              alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 更新商品資訊
-          const updateItem = async (itemId, updates, imageFile) => {
-            try {
-              const currentItem = inventory.find(item => item.id === itemId);
-              
-              // 如果有新圖片，先上傳
-              if (imageFile) {
-                const imageUrl = await uploadImage(imageFile, itemId);
-                if (imageUrl) {
-                  // 刪除舊圖片
-                  if (currentItem.image_url) {
-                    await deleteOldImage(currentItem.image_url);
-                  }
-                  updates.image_url = imageUrl;
-                }
-              }
-
-              const { error } = await supabase
-                .from('inventory')
-                .update(updates)
-                .eq('id', itemId);
-
-              if (error) {
-                console.error('更新商品失敗:', error);
-                alert('更新失敗');
-                return;
-              }
-
-              // 更新本地狀態
-              setInventory(prev => prev.map(item => 
-                item.id === itemId ? { ...item, ...updates } : item
-              ));
-
-              if (selectedItem && selectedItem.id === itemId) {
-                setSelectedItem(prev => ({ ...prev, ...updates }));
-              }
-
-              alert('更新成功！');
-            } catch (error) {
-              console.error('更新商品錯誤:', error);
-              alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 刪除記錄（修正版）
-          const deleteRecord = async (itemId, recordId, recordData) => {
-            if (!isAdmin) return;
             
-            if (!confirm('確定要刪除這筆記錄嗎？庫存數量會相應調整。')) return;
-
-            try {
-              // 刪除記錄
-              const { error } = await supabase
-                .from('records')
-                .delete()
-                .eq('id', recordId);
-
-              if (error) {
-                console.error('刪除記錄失敗:', error);
-                alert('刪除失敗');
-                return;
-              }
-
-              // 調整庫存（反向操作）
-              const currentItem = inventory.find(item => item.id === itemId);
-              const adjustment = recordData.type === 'in' 
-                ? -recordData.quantity  // 入庫記錄被刪除，要減少庫存
-                : +recordData.quantity; // 出庫記錄被刪除，要增加庫存
-                
-              const newStock = Math.max(0, currentItem.stock + adjustment);
-
-              // 更新庫存
-              await supabase
-                .from('inventory')
-                .update({ stock: newStock })
-                .eq('id', itemId);
-
-              // 更新本地狀態
-              setInventory(prev => prev.map(item => 
-                item.id === itemId ? { ...item, stock: newStock } : item
-              ));
-              
-              // 重新載入記錄
-              if (selectedItem && selectedItem.id === itemId) {
-                const records = await loadItemRecords(itemId);
-                setSelectedItem(prev => ({ ...prev, stock: newStock, records }));
-              }
-
-              alert('刪除成功！');
-            } catch (error) {
-              console.error('刪除記錄錯誤:', error);
-              alert('操作失敗，請稍後再試');
-            }
-          };
-
-          // 操作人員管理模態框（獨立版本）
-          const OperatorManagementModal = () => {
-            const [newOperator, setNewOperator] = useState('');
-
-            const addOperator = () => {
-              if (newOperator.trim()) {
-                addOperatorToDb(newOperator.trim());
-                setNewOperator('');
-              }
-            };
-
-            return (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                      <Users size={20} />
-                      管理操作人員
-                    </h2>
-                    <button onClick={() => setShowOperatorModal(false)}>
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newOperator}
-                        onChange={(e) => setNewOperator(e.target.value)}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                        placeholder="新增操作人員"
-                        onKeyPress={(e) => e.key === 'Enter' && addOperator()}
-                        autoFocus
-                        style={{ fontSize: '16px' }}
-                      />
-                      <button
-                        onClick={addOperator}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                      >
-                        新增
-                      </button>
-                    </div>
-                    
-                    <div className="max-h-60 overflow-y-auto border rounded-lg p-2">
-                      {operators.length > 0 ? (
-                        operators.map(operator => (
-                          <div key={operator.id} className="flex justify-between items-center py-2 px-2 hover:bg-gray-50 rounded">
-                            <span className="font-medium">{operator.name}</span>
-                            <button
-                              onClick={() => deleteOperatorFromDb(operator.id)}
-                              className="text-red-500 hover:text-red-700 text-sm px-2 py-1 hover:bg-red-50 rounded"
-                            >
-                              刪除
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-4 text-gray-500">
-                          尚無操作人員
+            // 總覽頁面
+            const OverviewPage = () => (
+                <div className="min-h-screen pt-20 pb-20 sm:pb-8">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        {/* 統計卡片 */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="bg-white rounded-xl p-4 shadow-soft">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500">總商品</p>
+                                        <p className="text-2xl font-bold text-gray-800">{inventory.length}</p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <Icons.Package size={20} className="text-purple-600" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-soft">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500">總庫存</p>
+                                        <p className="text-2xl font-bold text-gray-800">
+                                            {inventory.reduce((sum, item) => sum + item.stock, 0)}
+                                        </p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <Icons.Archive size={20} className="text-emerald-600" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-soft">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500">低庫存</p>
+                                        <p className="text-2xl font-bold text-amber-600">
+                                            {inventory.filter(item => item.stock < 10).length}
+                                        </p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                        <Icons.TrendingDown size={20} className="text-amber-600" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-soft">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-500">缺貨</p>
+                                        <p className="text-2xl font-bold text-red-600">
+                                            {inventory.filter(item => item.stock === 0).length}
+                                        </p>
+                                    </div>
+                                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <Icons.X size={20} className="text-red-600" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-                      提示：新增的操作人員會顯示在出入庫記錄的下拉選單中
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setShowOperatorModal(false)}
-                    className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                  >
-                    完成
-                  </button>
-                </div>
-              </div>
-            );
-          };
-
-          // 總覽頁面
-          const OverviewPage = () => (
-            <div className="p-4 sm:p-6">
-              {/* 管理模式標題列 */}
-              {isAdmin && (
-                <div className="bg-gray-100 rounded-lg px-4 py-2 mb-4 flex justify-between items-center">
-                  <span className="text-gray-600 font-medium">管理模式</span>
-                  <button
-                    onClick={() => setIsAdmin(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    登出
-                  </button>
-                </div>
-              )}
-              
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">公司庫存</h1>
-                    <p className="text-sm text-gray-500 mt-1">共 {filteredInventory.length} 項商品</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto justify-end flex-wrap">
-                  {isAdmin ? (
-                    <>
-                      <button
-                        onClick={() => setShowAddItemModal(true)}
-                        className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm flex items-center gap-2"
-                      >
-                        <Plus size={16} />
-                        新增商品
-                      </button>
-                      <button
-                        onClick={() => setShowCategoryModal(true)}
-                        className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm flex items-center gap-2"
-                      >
-                        <Tag size={16} />
-                        管理類別
-                      </button>
-                      <button
-                        onClick={() => setShowOperatorModal(true)}
-                        className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm flex items-center gap-2"
-                      >
-                        <Users size={16} />
-                        操作人員
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setShowPasswordModal(true)}
-                      className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
-                    >
-                      管理登入
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* 類別篩選 */}
-              <div className="mb-6">
-                <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  style={{ fontSize: '16px' }}
-                >
-                  <option value="">全部類別</option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.name}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 緊湊卡片網格 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {filteredInventory.map(item => (
-                  <div 
-                    key={item.id} 
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-blue-200 group relative"
-                  >
-                    {/* 管理員刪除按鈕 */}
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteItem(item.id);
-                        }}
-                        className="absolute top-1 left-1 z-10 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-
-                    <div onClick={() => navigateToDetail(item)}>
-                      {/* 圖片區域 */}
-                      <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-xl flex items-center justify-center relative overflow-hidden">
-                        {item.image_url ? (
-                          <img 
-                            src={item.image_url} 
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className={`absolute inset-0 flex items-center justify-center ${item.image_url ? 'hidden' : ''}`}>
-                          <Package size={32} className="text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        
+                        {/* 類別篩選 */}
+                        <div className="mb-6">
+                            <CategoryFilter />
                         </div>
-                        {/* 類別標籤在右上方 */}
-                        <div className="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium max-w-20 truncate">
-                          {item.category}
-                        </div>
-                        {/* 庫存數量在右下方 */}
-                        <div className="absolute bottom-2 right-2">
-                          <div className={`px-3 py-1.5 rounded-full text-sm font-bold shadow-lg ${
-                            item.stock < 10 
-                              ? 'bg-red-500 text-white' 
-                              : item.stock < 50 
-                              ? 'bg-yellow-500 text-white'
-                              : 'bg-green-500 text-white'
-                          }`}>
-                            {item.stock}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* 內容區域 */}
-                      <div className="p-3">
-                        <h3 className="font-semibold text-sm text-gray-800 mb-1 line-clamp-2 leading-tight">
-                          {item.name}
-                        </h3>
-                        <div className="flex items-center text-xs text-gray-500">
-                          📍 {item.location ? item.location.split('\n')[0].slice(0, 12) : '未設定位置'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredInventory.length === 0 && !loading && (
-                <div className="text-center py-12">
-                  <Package size={64} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">暫無商品資料</p>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setShowAddItemModal(true)}
-                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                    >
-                      新增第一個商品
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-
-          // 詳細頁面
-          const DetailPage = () => {
-            const [recordForm, setRecordForm] = useState({
-              type: 'out',
-              quantity: '',
-              note: '',
-              operator: ''
-            });
-            const [showOperatorModalDetail, setShowOperatorModalDetail] = useState(false);
-            const [showStockAdjustModal, setShowStockAdjustModal] = useState(false);
-
-            const handleSubmitRecord = () => {
-              if (!recordForm.quantity || !recordForm.operator) {
-                alert('請填寫完整資訊');
-                return;
-              }
-              addRecord(selectedItem.id, {
-                ...recordForm,
-                quantity: parseInt(recordForm.quantity)
-              });
-              setRecordForm({ type: 'out', quantity: '', note: '', operator: '' });
-            };
-
-            // 庫存調整模態框
-            const StockAdjustModal = () => {
-              const [newStock, setNewStock] = useState(selectedItem.stock);
-              const [adjustNote, setAdjustNote] = useState('');
-
-              const handleAdjust = () => {
-                adjustStock(selectedItem.id, parseInt(newStock), adjustNote);
-                setShowStockAdjustModal(false);
-              };
-
-              return (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold">調整庫存</h2>
-                      <button onClick={() => setShowStockAdjustModal(false)}>
-                        <X size={20} />
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">調整為</label>
-                        <input
-                          type="number"
-                          value={newStock}
-                          onChange={(e) => setNewStock(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          placeholder="請輸入新的庫存數量"
-                          min="0"
-                          autoFocus
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">調整原因</label>
-                        <textarea
-                          value={adjustNote}
-                          onChange={(e) => setAdjustNote(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                          placeholder="請輸入調整原因（選填）"
-                          rows="3"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-6">
-                      <button
-                        onClick={handleAdjust}
-                        className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                      >
-                        確認調整
-                      </button>
-                      <button
-                        onClick={() => setShowStockAdjustModal(false)}
-                        className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            };
-
-            // 操作人員管理模態框（詳細頁版本）
-            const OperatorModal = () => {
-              const [newOperator, setNewOperator] = useState('');
-
-              const addOperator = () => {
-                if (newOperator.trim()) {
-                  addOperatorToDb(newOperator.trim());
-                  setNewOperator('');
-                }
-              };
-
-              return (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold">管理操作人員</h2>
-                      <button onClick={() => setShowOperatorModalDetail(false)}>
-                        <X size={20} />
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newOperator}
-                          onChange={(e) => setNewOperator(e.target.value)}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                          placeholder="新增操作人員"
-                          onKeyPress={(e) => e.key === 'Enter' && addOperator()}
-                          autoFocus
-                          style={{ fontSize: '16px' }}
-                        />
-                        <button
-                          onClick={addOperator}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                        >
-                          新增
-                        </button>
-                      </div>
-                      
-                      <div className="max-h-40 overflow-y-auto">
-                        {operators.map(operator => (
-                          <div key={operator.id} className="flex justify-between items-center py-2 border-b">
-                            <span>{operator.name}</span>
-                            <button
-                              onClick={() => deleteOperatorFromDb(operator.id)}
-                              className="text-red-500 hover:text-red-700 text-sm"
-                            >
-                              刪除
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => setShowOperatorModalDetail(false)}
-                      className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      完成
-                    </button>
-                  </div>
-                </div>
-              );
-            };
-
-            return (
-              <div className="p-6 max-w-4xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                  <button
-                    onClick={navigateToOverview}
-                    className="text-blue-500 hover:text-blue-700 flex items-center gap-2"
-                  >
-                    ← 返回總覽
-                  </button>
-                  <div className="flex gap-2">
-                    {isAdmin && (
-                      <>
-                        <button
-                          onClick={() => setShowStockAdjustModal(true)}
-                          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center gap-2 text-sm"
-                        >
-                          <Settings size={16} />
-                          調整庫存
-                        </button>
-                        <button
-                          onClick={() => setEditingItem(selectedItem)}
-                          className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center gap-2 text-sm"
-                        >
-                          <Edit3 size={16} />
-                          編輯商品
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* 商品資訊 */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-4 overflow-hidden">
-                        {selectedItem.image_url ? (
-                          <img 
-                            src={selectedItem.image_url} 
-                            alt={selectedItem.name}
-                            className="w-full h-full object-cover"
-                          />
+                        
+                        {/* 商品列表 */}
+                        {filteredInventory.length > 0 ? (
+                            viewMode === 'grid' ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                    {filteredInventory.map(item => (
+                                        <ProductCard key={item.id} item={item} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div>
+                                    {filteredInventory.map(item => (
+                                        <ProductListItem key={item.id} item={item} />
+                                    ))}
+                                </div>
+                            )
                         ) : (
-                          <Package size={120} className="text-gray-400" />
+                            <EmptyState />
                         )}
-                      </div>
                     </div>
-                    <div>
-                      <h1 className="text-3xl font-bold mb-4">{selectedItem.name}</h1>
-                      <div className="space-y-3">
-                        <div>
-                          <span className="font-semibold text-gray-700">目前庫存：</span>
-                          <span className={`text-4xl font-bold ml-3 ${selectedItem.stock < 10 ? 'text-red-500' : selectedItem.stock < 50 ? 'text-yellow-500' : 'text-green-600'}`}>
-                            {selectedItem.stock}
-                          </span>
-                          <span className="text-lg text-gray-500 ml-2">件</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-gray-700">類別：</span>
-                          <span className="ml-2 text-gray-600">{selectedItem.category || '未設定'}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-gray-700">存放位置：</span>
-                          <p className="mt-1 whitespace-pre-line text-gray-600">{selectedItem.location || '未設定'}</p>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-gray-700">規格：</span>
-                          <span className="ml-2 text-gray-600">{selectedItem.specifications || '未設定'}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-gray-700">單價：</span>
-                          <span className="ml-2 text-gray-600">NT$ {selectedItem.unit_price || '未設定'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-
-                {/* 新增記錄表單 */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Plus size={20} />
-                    新增出入庫記錄
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">操作類型</label>
-                        <select
-                          value={recordForm.type}
-                          onChange={(e) => setRecordForm({...recordForm, type: e.target.value})}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          style={{ fontSize: '16px' }}
-                        >
-                          <option value="out">出庫</option>
-                          <option value="in">入庫</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">數量</label>
-                        <input
-                          type="number"
-                          value={recordForm.quantity}
-                          onChange={(e) => setRecordForm({...recordForm, quantity: e.target.value})}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="請輸入數量"
-                          min="1"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          style={{ fontSize: '16px' }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">操作人員</label>
-                      <div className="flex gap-2">
-                        <select
-                          value={recordForm.operator}
-                          onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          style={{ fontSize: '16px' }}
-                        >
-                          <option value="">請選擇操作人員</option>
-                          {operators.map(op => (
-                            <option key={op.id} value={op.name}>{op.name}</option>
-                          ))}
-                        </select>
-                        {isAdmin && (
-                          <button
-                            onClick={() => setShowOperatorModalDetail(true)}
-                            className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
-                          >
-                            管理
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
-                      <textarea
-                        value={recordForm.note}
-                        onChange={(e) => setRecordForm({...recordForm, note: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入備註（選填）"
-                        rows="3"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <button
-                      onClick={handleSubmitRecord}
-                      className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      提交記錄
-                    </button>
-                  </div>
-                </div>
-
-                {/* 歷史記錄 */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <FileText size={20} />
-                    出入庫歷史記錄
-                  </h2>
-                  
-<div className="overflow-x-auto">
-    <table className="w-full text-sm min-w-[600px]">
-      <thead>
-        <tr className="border-b">
-          <th className="date-col w-[120px] whitespace-nowrap overflow-hidden text-ellipsis text-left py-2">日期時間</th>
-          <th className="text-center py-2">類型</th>
-          <th className="text-center py-2">數量</th>
-          <th className="text-center py-2">操作人員</th>
-          <th className="text-left py-2">備註</th>
-          {isAdmin && <th className="text-left py-2">操作</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {selectedItem.records && selectedItem.records.length > 0 ? (
-          selectedItem.records.map((record, index) => (
-            <tr key={record.id || index} className="border-b hover:bg-gray-50">
-              <td className="date-col py-2 w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
-                {window.innerWidth < 640
-                  ? new Date(record.operation_date).toLocaleDateString('zh-TW')
-                  : new Date(record.operation_date).toLocaleString('zh-TW')}
-              </td>
-              <td className="py-2 text-center">
-                <span className={`px-2 py-1 rounded text-xs ${
-                  record.type === 'in' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {record.type === 'in' ? '入庫' : '出庫'}
-                </span>
-              </td>
-              <td className="py-2 text-center">{record.quantity}</td>
-              <td className="py-2 text-center">{record.operator}</td>
-              <td className="py-2 break-words max-w-[150px]">{record.note || '-'}</td>
-              {isAdmin && (
-                <td className="py-2">
-                  <button
-                    onClick={() => deleteRecord(selectedItem.id, record.id, record)}
-                    className="text-red-500 hover:text-red-700 text-xs"
-                  >
-                    刪除
-                  </button>
-                </td>
-              )}
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan={isAdmin ? 6 : 5} className="py-8 text-center text-gray-500">
-              暫無出入庫記錄
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-</div>
-
-                </div>
+            );
+            
+            // 詳細頁面
+            const DetailPage = () => {
+                if (!selectedItem) return null;
                 
-                {/* 模態框 */}
-                {showOperatorModalDetail && <OperatorModal />}
-                {showStockAdjustModal && <StockAdjustModal />}
-              </div>
-            );
-          };
-
-          // 類別管理模態框
-          const CategoryModal = () => {
-            const [newCategory, setNewCategory] = useState('');
-
-            const addCategory = () => {
-              if (newCategory.trim()) {
-                addCategoryToDb(newCategory.trim());
-                setNewCategory('');
-              }
-            };
-
-            return (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">管理商品類別</h2>
-                    <button onClick={() => setShowCategoryModal(false)}>
-                      <X size={20} />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                        placeholder="新增類別"
-                        onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-                        autoFocus
-                        style={{ fontSize: '16px' }}
-                      />
-                      <button
-                        onClick={addCategory}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                      >
-                        新增
-                      </button>
-                    </div>
-                    
-                    <div className="max-h-40 overflow-y-auto">
-                      {categories.map(category => (
-                        <div key={category.id} className="flex justify-between items-center py-2 border-b">
-                          <span>{category.name}</span>
-                          <button
-                            onClick={() => deleteCategoryFromDb(category.id)}
-                            className="text-red-500 hover:text-red-700 text-sm"
-                          >
-                            刪除
-                          </button>
+                return (
+                    <div className="min-h-screen pt-20 pb-20 sm:pb-8">
+                        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* 返回按鈕 */}
+                            <button
+                                onClick={navigateToOverview}
+                                className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-6"
+                            >
+                                <Icons.ChevronLeft size={20} />
+                                <span>返回總覽</span>
+                            </button>
+                            
+                            {/* 商品資訊卡片 */}
+                            <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                                            {selectedItem.image_url ? (
+                                                <img 
+                                                    src={selectedItem.image_url} 
+                                                    alt={selectedItem.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Icons.Package size={80} className="text-gray-300" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-gray-800 mb-4">{selectedItem.name}</h1>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-gray-500">庫存數量</span>
+                                                <span className="text-3xl font-bold text-purple-600">{selectedItem.stock}</span>
+                                            </div>
+                                            
+                                            <div>
+                                                <span className="text-gray-500">類別</span>
+                                                <p className="mt-1">
+                                                    <span className="tag-pill bg-purple-100 text-purple-700">
+                                                        {selectedItem.category || '未分類'}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            
+                                            <div>
+                                                <span className="text-gray-500">存放位置</span>
+                                                <p className="mt-1 text-gray-800">{selectedItem.location || '未設定'}</p>
+                                            </div>
+                                            
+                                            <div>
+                                                <span className="text-gray-500">規格</span>
+                                                <p className="mt-1 text-gray-800">{selectedItem.specifications || '未設定'}</p>
+                                            </div>
+                                            
+                                            <div>
+                                                <span className="text-gray-500">單價</span>
+                                                <p className="mt-1 text-gray-800">NT$ {selectedItem.unit_price || '未設定'}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {isAdmin && (
+                                            <div className="flex gap-3 mt-6">
+                                                <button
+                                                    onClick={() => setEditingItem(selectedItem)}
+                                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+                                                >
+                                                    編輯商品
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                      ))}
                     </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setShowCategoryModal(false)}
-                    className="w-full mt-4 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                  >
-                    完成
-                  </button>
-                </div>
-              </div>
-            );
-          };
-
-          // 新增商品模態框
-          const AddItemModal = () => {
-            const [itemForm, setItemForm] = useState({
-              name: '',
-              category: '',
-              location: '',
-              specifications: '',
-              unit_price: '',
-              stock: '0'
-            });
-            const [imageFile, setImageFile] = useState(null);
-            const [imagePreview, setImagePreview] = useState(null);
-            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-            const [imageScale, setImageScale] = useState(1);
-            const [isDragging, setIsDragging] = useState(false);
-            const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-            const fileInputRef = useRef(null);
-            const imageRef = useRef(null);
-            const containerRef = useRef(null);
-
-            const handleImageChange = (e) => {
-              const file = e.target.files[0];
-              if (file && file.type.startsWith('image/')) {
-                setImageFile(file);
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setImagePreview(reader.result);
-                  setImagePosition({ x: 0, y: 0 });
-                  setImageScale(1);
+                );
+            };
+            
+            // 密碼模態框
+            const PasswordModal = () => {
+                const [password, setPassword] = useState('');
+                
+                const handleLogin = () => {
+                    if (password === 'admin123') {
+                        setIsAdmin(true);
+                        setShowPasswordModal(false);
+                        setPassword('');
+                    } else {
+                        alert('密碼錯誤！');
+                    }
                 };
-                reader.readAsDataURL(file);
-              }
-            };
-
-            const handleMouseDown = (e) => {
-              if (!imagePreview) return;
-              setIsDragging(true);
-              setDragStart({
-                x: e.clientX - imagePosition.x,
-                y: e.clientY - imagePosition.y
-              });
-              e.preventDefault();
-            };
-
-            const handleMouseMove = (e) => {
-              if (!isDragging || !imagePreview) return;
-              const newX = e.clientX - dragStart.x;
-              const newY = e.clientY - dragStart.y;
-              setImagePosition({ x: newX, y: newY });
-            };
-
-            const handleMouseUp = () => {
-              setIsDragging(false);
-            };
-
-            const handleTouchStart = (e) => {
-              if (!imagePreview) return;
-              const touch = e.touches[0];
-              setIsDragging(true);
-              setDragStart({
-                x: touch.clientX - imagePosition.x,
-                y: touch.clientY - imagePosition.y
-              });
-              e.preventDefault();
-            };
-
-            const handleTouchMove = (e) => {
-              if (!isDragging || !imagePreview) return;
-              const touch = e.touches[0];
-              const newX = touch.clientX - dragStart.x;
-              const newY = touch.clientY - dragStart.y;
-              setImagePosition({ x: newX, y: newY });
-            };
-
-            useEffect(() => {
-              if (isDragging) {
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-                document.addEventListener('touchmove', handleTouchMove);
-                document.addEventListener('touchend', handleMouseUp);
-                return () => {
-                  document.removeEventListener('mousemove', handleMouseMove);
-                  document.removeEventListener('mouseup', handleMouseUp);
-                  document.removeEventListener('touchmove', handleTouchMove);
-                  document.removeEventListener('touchend', handleMouseUp);
-                };
-              }
-            }, [isDragging, dragStart]);
-
-            const handleAdd = async () => {
-              if (!itemForm.name.trim()) {
-                alert('請填寫商品名稱');
-                return;
-              }
-
-              const success = await addNewItem(itemForm, imageFile);
-              if (success) {
-                setShowAddItemModal(false);
-                setItemForm({
-                  name: '',
-                  category: '',
-                  location: '',
-                  specifications: '',
-                  unit_price: '',
-                  stock: '0'
-                });
-                setImageFile(null);
-                setImagePreview(null);
-                setImagePosition({ x: 0, y: 0 });
-                setImageScale(1);
-              }
-            };
-
-            return (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">新增商品</h2>
-                    <button onClick={() => setShowAddItemModal(false)}>
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {/* 圖片上傳 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                      {imagePreview ? (
-                        <div className="space-y-2">
-                          <div className="image-preview-container" ref={containerRef}>
-                            <img 
-                              ref={imageRef}
-                              src={imagePreview} 
-                              alt="預覽"
-                              className={`draggable-image ${isDragging ? 'dragging' : ''}`}
-                              style={{
-                                transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
-                                maxWidth: 'none',
-                                height: 'auto',
-                                width: `${100 * imageScale}%`
-                              }}
-                              onMouseDown={handleMouseDown}
-                              onTouchStart={handleTouchStart}
+                
+                if (!showPasswordModal) return null;
+                
+                return (
+                    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-sm slide-up">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-4">管理員登入</h2>
+                            <input
+                                type="password"
+                                placeholder="請輸入密碼"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 mb-4"
+                                autoFocus
                             />
-                            <div className="crop-overlay"></div>
-                            <div className="image-controls">
-                              <button
-                                onClick={() => fileInputRef.current.click()}
-                                className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
-                                title="更換圖片"
-                              >
-                                <Camera size={16} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setImageFile(null);
-                                  setImagePreview(null);
-                                  setImagePosition({ x: 0, y: 0 });
-                                  setImageScale(1);
-                                }}
-                                className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-                                title="刪除圖片"
-                              >
-                                <X size={16} />
-                              </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleLogin}
+                                    className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                                >
+                                    登入
+                                </button>
+                                <button
+                                    onClick={() => setShowPasswordModal(false)}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
+                                >
+                                    取消
+                                </button>
                             </div>
-                            <div className="zoom-slider">
-                              <span className="text-xs text-gray-600">縮放</span>
-                              <input
-                                type="range"
-                                min="0.5"
-                                max="2"
-                                step="0.1"
-                                value={imageScale}
-                                onChange={(e) => setImageScale(parseFloat(e.target.value))}
-                                className="flex-1"
-                              />
-                              <span className="text-xs text-gray-600">{Math.round(imageScale * 100)}%</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-500 text-center">
-                            拖動圖片調整位置，使用縮放滑桿調整大小
-                          </p>
+                            <p className="text-xs text-gray-500 text-center mt-4">提示：密碼是 admin123</p>
                         </div>
-                      ) : (
-                        <div
-                          onClick={() => fileInputRef.current.click()}
-                          className="image-upload-area"
-                        >
-                          <Camera size={48} className="mx-auto mb-2 text-gray-400" />
-                          <p className="text-sm text-gray-500">點擊上傳圖片</p>
+                    </div>
+                );
+            };
+            
+            // 載入畫面
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="loader mb-4"></div>
+                            <p className="text-gray-600">載入中...</p>
                         </div>
-                      )}
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱 *</label>
-                      <input
-                        type="text"
-                        value={itemForm.name}
-                        onChange={(e) => setItemForm({...itemForm, name: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入商品名稱"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
-                      <select
-                        value={itemForm.category}
-                        onChange={(e) => setItemForm({...itemForm, category: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ fontSize: '16px' }}
-                      >
-                        <option value="">請選擇類別</option>
-                        {categories.map(category => (
-                          <option key={category.id} value={category.name}>{category.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
-                      <textarea
-                        value={itemForm.location}
-                        onChange={(e) => setItemForm({...itemForm, location: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入存放位置"
-                        rows="3"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
-                      <input
-                        type="text"
-                        value={itemForm.specifications}
-                        onChange={(e) => setItemForm({...itemForm, specifications: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入商品規格"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
-                      <input
-                        type="number"
-                        value={itemForm.unit_price}
-                        onChange={(e) => setItemForm({...itemForm, unit_price: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入單價"
-                        min="0"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">初始庫存</label>
-                      <input
-                        type="number"
-                        value={itemForm.stock}
-                        onChange={(e) => setItemForm({...itemForm, stock: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入初始庫存數量"
-                        min="0"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-6">
-                    <button
-                      onClick={handleAdd}
-                      className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 flex items-center justify-center gap-2"
-                    >
-                      <Plus size={16} />
-                      新增商品
-                    </button>
-                    <button
-                      onClick={() => setShowAddItemModal(false)}
-                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      取消
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          };
-
-          // 編輯商品模態框
-          const EditModal = () => {
-            const [editForm, setEditForm] = useState({
-              name: editingItem?.name || '',
-              location: editingItem?.location || '',
-              category: editingItem?.category || '',
-              specifications: editingItem?.specifications || '',
-              unit_price: editingItem?.unit_price || ''
-            });
-            const [imageFile, setImageFile] = useState(null);
-            const [imagePreview, setImagePreview] = useState(editingItem?.image_url || null);
-            const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
-            const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-            const [imageScale, setImageScale] = useState(1);
-            const [isDragging, setIsDragging] = useState(false);
-            const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-            const fileInputRef = useRef(null);
-
-            const handleImageChange = (e) => {
-              const file = e.target.files[0];
-              if (file && file.type.startsWith('image/')) {
-                setImageFile(file);
-                setShouldDeleteImage(false);
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                  setImagePreview(reader.result);
-                  setImagePosition({ x: 0, y: 0 });
-                  setImageScale(1);
-                };
-                reader.readAsDataURL(file);
-              }
-            };
-
-            const handleDeleteImage = () => {
-              setImageFile(null);
-              setImagePreview(null);
-              setShouldDeleteImage(true);
-              setImagePosition({ x: 0, y: 0 });
-              setImageScale(1);
-            };
-
-            const handleMouseDown = (e) => {
-              if (!imagePreview) return;
-              setIsDragging(true);
-              setDragStart({
-                x: e.clientX - imagePosition.x,
-                y: e.clientY - imagePosition.y
-              });
-              e.preventDefault();
-            };
-
-            const handleMouseMove = (e) => {
-              if (!isDragging || !imagePreview) return;
-              const newX = e.clientX - dragStart.x;
-              const newY = e.clientY - dragStart.y;
-              setImagePosition({ x: newX, y: newY });
-            };
-
-            const handleMouseUp = () => {
-              setIsDragging(false);
-            };
-
-            const handleTouchStart = (e) => {
-              if (!imagePreview) return;
-              const touch = e.touches[0];
-              setIsDragging(true);
-              setDragStart({
-                x: touch.clientX - imagePosition.x,
-                y: touch.clientY - imagePosition.y
-              });
-              e.preventDefault();
-            };
-
-            const handleTouchMove = (e) => {
-              if (!isDragging || !imagePreview) return;
-              const touch = e.touches[0];
-              const newX = touch.clientX - dragStart.x;
-              const newY = touch.clientY - dragStart.y;
-              setImagePosition({ x: newX, y: newY });
-            };
-
-            useEffect(() => {
-              if (isDragging) {
-                document.addEventListener('mousemove', handleMouseMove);
-                document.addEventListener('mouseup', handleMouseUp);
-                document.addEventListener('touchmove', handleTouchMove);
-                document.addEventListener('touchend', handleMouseUp);
-                return () => {
-                  document.removeEventListener('mousemove', handleMouseMove);
-                  document.removeEventListener('mouseup', handleMouseUp);
-                  document.removeEventListener('touchmove', handleTouchMove);
-                  document.removeEventListener('touchend', handleMouseUp);
-                };
-              }
-            }, [isDragging, dragStart]);
-
-            const handleSave = async () => {
-              const updates = {
-                ...editForm,
-                unit_price: editForm.unit_price ? parseInt(editForm.unit_price) : null
-              };
-
-              if (shouldDeleteImage) {
-                updates.image_url = null;
-                if (editingItem.image_url) {
-                  await deleteOldImage(editingItem.image_url);
-                }
-              }
-
-              updateItem(editingItem.id, updates, imageFile);
-              setEditingItem(null);
-            };
-
+                );
+            }
+            
             return (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">編輯商品</h2>
-                    <button onClick={() => setEditingItem(null)}>
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {/* 圖片編輯 */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                      {imagePreview ? (
-                        <div className="space-y-2">
-                          <div className="image-preview-container">
-                            <img 
-                              src={imagePreview} 
-                              alt="預覽"
-                              className={`draggable-image ${isDragging ? 'dragging' : ''}`}
-                              style={{
-                                transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
-                                maxWidth: 'none',
-                                height: 'auto',
-                                width: `${100 * imageScale}%`
-                              }}
-                              onMouseDown={handleMouseDown}
-                              onTouchStart={handleTouchStart}
-                            />
-                            <div className="crop-overlay"></div>
-                            <div className="image-controls">
-                              <button
-                                onClick={() => fileInputRef.current.click()}
-                                className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600"
-                                title="更換圖片"
-                              >
-                                <Camera size={16} />
-                              </button>
-                              <button
-                                onClick={handleDeleteImage}
-                                className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600"
-                                title="刪除圖片"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                            <div className="zoom-slider">
-                              <span className="text-xs text-gray-600">縮放</span>
-                              <input
-                                type="range"
-                                min="0.5"
-                                max="2"
-                                step="0.1"
-                                value={imageScale}
-                                onChange={(e) => setImageScale(parseFloat(e.target.value))}
-                                className="flex-1"
-                              />
-                              <span className="text-xs text-gray-600">{Math.round(imageScale * 100)}%</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-500 text-center">
-                            拖動圖片調整位置，使用縮放滑桿調整大小
-                          </p>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => fileInputRef.current.click()}
-                          className="image-upload-area"
-                        >
-                          <Camera size={48} className="mx-auto mb-2 text-gray-400" />
-                          <p className="text-sm text-gray-500">點擊上傳圖片</p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">商品名稱</label>
-                      <input
-                        type="text"
-                        value={editForm.name}
-                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
-                      <select
-                        value={editForm.category}
-                        onChange={(e) => setEditForm({...editForm, category: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ fontSize: '16px' }}
-                      >
-                        <option value="">請選擇類別</option>
-                        {categories.map(category => (
-                          <option key={category.id} value={category.name}>{category.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">存放位置</label>
-                      <textarea
-                        value={editForm.location}
-                        onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows="3"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">規格</label>
-                      <input
-                        type="text"
-                        value={editForm.specifications}
-                        onChange={(e) => setEditForm({...editForm, specifications: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">單價</label>
-                      <input
-                        type="number"
-                        value={editForm.unit_price}
-                        onChange={(e) => setEditForm({...editForm, unit_price: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="請輸入單價"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        style={{ fontSize: '16px' }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-6">
-                    <button
-                      onClick={handleSave}
-                      className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 flex items-center justify-center gap-2"
-                    >
-                      <Save size={16} />
-                      保存
-                    </button>
-                    <button
-                      onClick={() => setEditingItem(null)}
-                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      取消
-                    </button>
-                  </div>
-                </div>
-              </div>
+                <>
+                    <TopNavBar />
+                    {currentView === 'overview' && <OverviewPage />}
+                    {currentView === 'detail' && <DetailPage />}
+                    <FAB />
+                    <BottomNav />
+                    <PasswordModal />
+                </>
             );
-          };
-
-          // 密碼輸入模態框 - 使用 memo 優化避免重新渲染
-          const PasswordModal = memo(() => {
-            const [localPassword, setLocalPassword] = useState('');
-            const inputRef = useRef(null);
-
-            // 處理登入
-            const handleLogin = () => {
-              if (localPassword === 'admin123') {
-                setIsAdmin(true);
-                setShowPasswordModal(false);
-                setLocalPassword('');
-              } else {
-                alert('密碼錯誤！');
-              }
-            };
-
-            // 處理取消
-            const handleCancel = () => {
-              setShowPasswordModal(false);
-              setLocalPassword('');
-              setAdminPassword('');
-            };
-
-            // 自動聚焦
-            useEffect(() => {
-              if (inputRef.current) {
-                setTimeout(() => {
-                  inputRef.current.focus();
-                }, 100);
-              }
-            }, []);
-
-            return (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
-                  <h2 className="text-xl font-semibold mb-4">管理員登入</h2>
-                  <input
-                    ref={inputRef}
-                    type="password"
-                    placeholder="請輸入管理員密碼"
-                    value={localPassword}
-                    onChange={(e) => setLocalPassword(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck="false"
-                    inputMode="text"
-                    style={{ fontSize: '16px' }}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleLogin}
-                      className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                    >
-                      登入
-                    </button>
-                    <button
-                      onClick={handleCancel}
-                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                    >
-                      取消
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">提示：密碼是 admin123</p>
-                </div>
-              </div>
-            );
-          });
-
-          // 載入中畫面
-          if (loading) {
-            return (
-              <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                  <p className="text-gray-600">載入中...</p>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div className="min-h-screen bg-gray-50">
-              {currentView === 'overview' && <OverviewPage />}
-              {currentView === 'detail' && selectedItem && <DetailPage />}
-              {showPasswordModal && <PasswordModal />}
-              {editingItem && <EditModal />}
-              {showAddItemModal && <AddItemModal />}
-              {showCategoryModal && <CategoryModal />}
-              {showOperatorModal && <OperatorManagementModal />}
-            </div>
-          );
         };
-
-        // 確保 DOM 載入完成後再渲染
-        try {
-          ReactDOM.render(<InventoryManager />, document.getElementById('root'));
-        } catch (error) {
-          console.error('渲染失敗:', error);
-          document.getElementById('root').innerHTML = '<div style="padding: 20px; text-align: center; color: red;">載入失敗，請檢查瀏覽器控制台錯誤訊息並確認 Supabase 設定正確</div>';
-        }
+        
+        // 渲染應用
+        ReactDOM.render(<InventoryManager />, document.getElementById('root'));
     </script>
 </body>
 </html>
