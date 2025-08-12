@@ -492,6 +492,21 @@
             const [showOperatorModal, setShowOperatorModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
             
+            // 處理瀏覽器上一頁功能
+   useEffect(() => {
+    const handlePopState = (event) => {
+        if (currentView === 'detail') {
+            setCurrentView('overview');
+            setSelectedItem(null);
+        }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+        window.removeEventListener('popstate', handlePopState);
+    };
+}, [currentView]);
+            
             // 載入資料函數
             const loadInventory = async () => {
                 try {
@@ -536,6 +551,27 @@
                     console.error('載入操作人員失敗:', error);
                 }
             };
+
+            // 載入指定商品的記錄
+const loadItemRecords = async (itemId) => {
+    try {
+        const { data, error } = await supabase
+            .from('records')
+            .select('*')
+            .eq('item_id', itemId)
+            .order('operation_date', { ascending: false });
+        
+        if (error) {
+            console.error('載入記錄失敗:', error);
+            return [];
+        }
+        
+        return data || [];
+    } catch (error) {
+        console.error('載入記錄錯誤:', error);
+        return [];
+    }
+};
             
             // 初始載入
             useEffect(() => {
@@ -868,10 +904,14 @@
             
             // 導航函數
             const navigateToDetail = async (item) => {
-                setSelectedItem(item);
-                setCurrentView('detail');
-                window.history.pushState({ view: 'detail' }, '', `#item-${item.id}`);
-            };
+    setLoading(true);
+    const records = await loadItemRecords(item.id);
+    const itemWithRecords = { ...item, records };
+    setSelectedItem(itemWithRecords);
+    setCurrentView('detail');
+    setLoading(false);
+    window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
+};
             
             const navigateToOverview = () => {
                 setCurrentView('overview');
@@ -966,89 +1006,253 @@
             
             // 詳細頁面
             const DetailPage = () => {
-                if (!selectedItem) return null;
+    const [recordForm, setRecordForm] = useState({
+        type: 'out',
+        quantity: '',
+        note: '',
+        operator: ''
+    });
+    const [records, setRecords] = useState(selectedItem?.records || []);
+
+    if (!selectedItem) return null;
+    
+    // 新增出入庫記錄
+    const handleSubmitRecord = async () => {
+        if (!recordForm.quantity || !recordForm.operator) {
+            alert('請填寫完整資訊');
+            return;
+        }
+        
+        try {
+            // 新增記錄到資料庫
+            const { error: recordError } = await supabase
+                .from('records')
+                .insert({
+                    item_id: selectedItem.id,
+                    type: recordForm.type,
+                    quantity: parseInt(recordForm.quantity),
+                    operator: recordForm.operator,
+                    note: recordForm.note || '',
+                    operation_date: new Date().toISOString()
+                });
+
+            if (recordError) throw recordError;
+
+            // 更新庫存
+            const newStock = recordForm.type === 'in' 
+                ? selectedItem.stock + parseInt(recordForm.quantity)
+                : Math.max(0, selectedItem.stock - parseInt(recordForm.quantity));
+
+            await supabase
+                .from('inventory')
+                .update({ stock: newStock })
+                .eq('id', selectedItem.id);
+
+            // 重新載入記錄
+            const updatedRecords = await loadItemRecords(selectedItem.id);
+            setRecords(updatedRecords);
+            setSelectedItem(prev => ({ ...prev, stock: newStock, records: updatedRecords }));
+            
+            // 清空表單
+            setRecordForm({ type: 'out', quantity: '', note: '', operator: '' });
+            alert('記錄新增成功！');
+        } catch (error) {
+            console.error('新增記錄失敗:', error);
+            alert('操作失敗，請稍後再試');
+        }
+    };
+    
+    return (
+        <div className="min-h-screen pt-20 pb-20 sm:pb-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* 返回按鈕 */}
+                <button
+                    onClick={navigateToOverview}
+                    className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-6"
+                >
+                    <Icons.ChevronLeft size={20} />
+                    <span>返回總覽</span>
+                </button>
                 
-                return (
-                    <div className="min-h-screen pt-20 pb-20 sm:pb-8">
-                        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                            {/* 返回按鈕 */}
-                            <button
-                                onClick={navigateToOverview}
-                                className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-6"
-                            >
-                                <Icons.ChevronLeft size={20} />
-                                <span>返回總覽</span>
-                            </button>
-                            
-                            {/* 商品資訊卡片 */}
-                            <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
-                                            {selectedItem.image_url ? (
-                                                <img 
-                                                    src={selectedItem.image_url} 
-                                                    alt={selectedItem.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <Icons.Package size={80} className="text-gray-300" />
-                                                </div>
-                                            )}
-                                        </div>
+                {/* 商品資訊卡片 */}
+                <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                                {selectedItem.image_url ? (
+                                    <img 
+                                        src={selectedItem.image_url} 
+                                        alt={selectedItem.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <Icons.Package size={80} className="text-gray-300" />
                                     </div>
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-800 mb-4">{selectedItem.name}</h1>
-                                        
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-gray-500">庫存數量</span>
-                                                <span className="text-3xl font-bold text-purple-600">{selectedItem.stock}</span>
-                                            </div>
-                                            
-                                            <div>
-                                                <span className="text-gray-500">類別</span>
-                                                <p className="mt-1">
-                                                    <span className="tag-pill bg-purple-100 text-purple-700">
-                                                        {selectedItem.category || '未分類'}
-                                                    </span>
-                                                </p>
-                                            </div>
-                                            
-                                            <div>
-                                                <span className="text-gray-500">存放位置</span>
-                                                <p className="mt-1 text-gray-800">{selectedItem.location || '未設定'}</p>
-                                            </div>
-                                            
-                                            <div>
-                                                <span className="text-gray-500">規格</span>
-                                                <p className="mt-1 text-gray-800">{selectedItem.specifications || '未設定'}</p>
-                                            </div>
-                                            
-                                            <div>
-                                                <span className="text-gray-500">單價</span>
-                                                <p className="mt-1 text-gray-800">NT$ {selectedItem.unit_price || '未設定'}</p>
-                                            </div>
-                                        </div>
-                                        
-                                        {isAdmin && (
-                                            <div className="flex gap-3 mt-6">
-                                                <button
-                                                    onClick={() => setEditingItem(selectedItem)}
-                                                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
-                                                >
-                                                    編輯商品
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-800 mb-4">{selectedItem.name}</h1>
+                            
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-gray-500">庫存數量</span>
+                                    <span className="text-3xl font-bold text-purple-600">{selectedItem.stock}</span>
+                                </div>
+                                
+                                <div>
+                                    <span className="text-gray-500">類別</span>
+                                    <p className="mt-1">
+                                        <span className="tag-pill bg-purple-100 text-purple-700">
+                                            {selectedItem.category || '未分類'}
+                                        </span>
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <span className="text-gray-500">存放位置</span>
+                                    <p className="mt-1 text-gray-800">{selectedItem.location || '未設定'}</p>
+                                </div>
+                                
+                                <div>
+                                    <span className="text-gray-500">規格</span>
+                                    <p className="mt-1 text-gray-800">{selectedItem.specifications || '未設定'}</p>
+                                </div>
+                                
+                                <div>
+                                    <span className="text-gray-500">單價</span>
+                                    <p className="mt-1 text-gray-800">NT$ {selectedItem.unit_price || '未設定'}</p>
+                                </div>
+                            </div>
+                            
+                            {isAdmin && (
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        onClick={() => setEditingItem(selectedItem)}
+                                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+                                    >
+                                        編輯商品
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                );
-            };
+                </div>
+                
+                {/* 新增記錄表單 */}
+                <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Icons.Plus size={20} />
+                        新增出入庫記錄
+                    </h2>
+                    <div className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">操作類型</label>
+                                <select
+                                    value={recordForm.type}
+                                    onChange={(e) => setRecordForm({...recordForm, type: e.target.value})}
+                                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                >
+                                    <option value="out">出庫</option>
+                                    <option value="in">入庫</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">數量</label>
+                                <input
+                                    type="number"
+                                    value={recordForm.quantity}
+                                    onChange={(e) => setRecordForm({...recordForm, quantity: e.target.value})}
+                                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="請輸入數量"
+                                    min="1"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">操作人員</label>
+                            <select
+                                value={recordForm.operator}
+                                onChange={(e) => setRecordForm({...recordForm, operator: e.target.value})}
+                                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            >
+                                <option value="">請選擇操作人員</option>
+                                {operators.map(op => (
+                                    <option key={op.id} value={op.name}>{op.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">備註</label>
+                            <textarea
+                                value={recordForm.note}
+                                onChange={(e) => setRecordForm({...recordForm, note: e.target.value})}
+                                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="請輸入備註（選填）"
+                                rows="3"
+                            />
+                        </div>
+                        <button
+                            onClick={handleSubmitRecord}
+                            className="px-6 py-2 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                        >
+                            提交記錄
+                        </button>
+                    </div>
+                </div>
+                
+                {/* 歷史記錄 */}
+                <div className="bg-white rounded-2xl shadow-soft p-6">
+                    <h2 className="text-xl font-semibold mb-4">出入庫歷史記錄</h2>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="text-left py-2">日期時間</th>
+                                    <th className="text-center py-2">類型</th>
+                                    <th className="text-center py-2">數量</th>
+                                    <th className="text-center py-2">操作人員</th>
+                                    <th className="text-left py-2">備註</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records && records.length > 0 ? (
+                                    records.map((record, index) => (
+                                        <tr key={record.id || index} className="border-b hover:bg-gray-50">
+                                            <td className="py-2">
+                                                {new Date(record.operation_date).toLocaleString('zh-TW')}
+                                            </td>
+                                            <td className="py-2 text-center">
+                                                <span className={`px-2 py-1 rounded text-xs ${
+                                                    record.type === 'in' 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                    {record.type === 'in' ? '入庫' : '出庫'}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 text-center">{record.quantity}</td>
+                                            <td className="py-2 text-center">{record.operator}</td>
+                                            <td className="py-2">{record.note || '-'}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="py-8 text-center text-gray-500">
+                                            暫無出入庫記錄
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
             
             // 密碼模態框
             const PasswordModal = () => {
