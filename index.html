@@ -819,20 +819,20 @@ useEffect(() => {
 const ProductCard = ({ item }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
 
-    // 用 Tailwind 自訂漸層 class
-    const getStockClass = (stock) => {
-        if (stock === 0) return 'bg-stock-gray';
-        if (stock < 10) return 'bg-stock-red';
-        if (stock < 50) return 'bg-stock-orange';
-        return 'bg-stock-green';
+    // 庫存狀態對應漸層樣式
+    const getStockStatus = (stock) => {
+        if (stock === 0) return { gradient: 'bg-gradient-to-r from-gray-400 to-gray-500', pulse: false };
+        if (stock < 10) return { gradient: 'bg-gradient-to-r from-red-500 to-red-600', pulse: false };
+        if (stock < 50) return { gradient: 'bg-gradient-to-r from-amber-400 to-orange-500', pulse: false };
+        return { gradient: 'bg-gradient-to-r from-emerald-500 to-green-600', pulse: false };
     };
 
-    const stockClass = getStockClass(item.stock);
+    const status = getStockStatus(item.stock);
 
     return (
         <div 
             className="card-hover bg-white rounded-2xl shadow-soft overflow-hidden cursor-pointer group
-                       w-full sm:max-w-[220px]"
+                       w-full sm:max-w-[220px]" // PC 版卡片縮小
             onClick={() => navigateToDetail(item)}
         >
             {/* 圖片區域 */}
@@ -862,9 +862,9 @@ const ProductCard = ({ item }) => {
                     </div>
                 </div>
                 
-                {/* 庫存數量 - 膠囊漸層 + hover 亮度 */}
+                {/* 庫存數量 - 圓角漸層膠囊 */}
                 <div className="absolute bottom-3 right-3">
-                    <div className={`px-3 py-1 rounded-full text-white font-bold shadow-lg text-sm ${stockClass} hover:brightness-110`}>
+                    <div className={`px-3 py-1 rounded-full text-white font-bold shadow-lg text-sm ${status.gradient}`}>
                         {item.stock}
                     </div>
                 </div>
@@ -896,7 +896,7 @@ const ProductCard = ({ item }) => {
                         <circle cx="12" cy="10" r="3"/>
                     </svg>
                     <span 
-                        className="truncate max-w-full sm:max-w-[140px]"
+                        className="truncate max-w-full sm:max-w-[140px]" // PC 版位置文字截斷
                         title={item.location || '未設定位置'}
                     >
                         {item.location ? item.location : '未設定位置'}
