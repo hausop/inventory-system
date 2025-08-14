@@ -100,37 +100,54 @@
             animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         
-        /* iOS Toggle 開關 */
-        .toggle-switch {
-            position: relative;
-            width: 51px;
-            height: 31px;
-            background-color: #e5e7eb;
-            border-radius: 31px;
-            transition: background-color 0.3s;
-            cursor: pointer;
-        }
-        
-        .toggle-switch.active {
-            background-color: #8b5cf6;
-        }
-        
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 27px;
-            height: 27px;
-            border-radius: 27px;
-            background-color: white;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
+        /* iOS Toggle 開關 - 修復 */
+.toggle-switch {
+    position: relative;
+    width: 51px;
+    height: 31px;
+    background-color: #e5e7eb;
+    border-radius: 31px;
+    transition: background-color 0.3s;
+    cursor: pointer;
+    z-index: 10; /* 增加z-index */
+    flex-shrink: 0; /* 防止被壓縮 */
+}
+
+.toggle-switch.active {
+    background-color: #8b5cf6;
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border-radius: 27px;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 11; /* 確保開關圓點在最上層 */
+}
+
+.toggle-switch.active::after {
+    transform: translateX(20px);
+}
+
+/* 管理模式控制區域 - 新增 */
+.admin-control-area {
+    position: relative;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+}
+
+.admin-control-area .toggle-switch {
+    margin-left: 4px;
+}
         
         /* 分段控制器 */
         .segmented-control {
@@ -767,18 +784,30 @@ useEffect(() => {
                                     </button>
                                 </div>
                                 
-                                {/* 管理模式開關 */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
-                                    <div 
-                                        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
-                                        onClick={() => isAdmin ? setIsAdmin(false) : setShowPasswordModal(true)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                {/* 管理模式開關 - 修復版 */}
+<div className="admin-control-area">
+    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
+    <div 
+        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
+        onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Toggle clicked, isAdmin:', isAdmin);
+            if (isAdmin) {
+                setIsAdmin(false);
+            } else {
+                setShowPasswordModal(true);
+            }
+        }}
+        style={{ 
+            cursor: 'pointer',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
+        }}
+    />
+</div>
             );
             
             // 分段控制器（類別篩選）
