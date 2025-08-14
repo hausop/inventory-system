@@ -229,49 +229,7 @@
             background-size: 200% 100%;
             animation: skeleton 1.5s infinite;
         }
-        
-        /* 底部導航（手機） */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            display: none;
-            z-index: 100;
-        }
-        
-        @media (max-width: 640px) {
-            .bottom-nav {
-                display: flex;
-                justify-content: space-around;
-                padding: 8px 0;
-            }
-            
-            .fab {
-                bottom: 70px;
-            }
-            
-            .fab-menu {
-                bottom: 134px;
-            }
-        }
-        
-        .bottom-nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .bottom-nav-item.active {
-            color: #8b5cf6;
-        }
-        
+         
         /* 搜索框動畫 */
         .search-box {
             transition: all 0.3s;
@@ -1017,39 +975,16 @@ const ProductCard = ({ item }) => {
                     )}
                 </>
             );
-            
-            // 底部導航（手機）
-            const BottomNav = () => (
-                <div className="bottom-nav glass-morphism">
-                    <div className={`bottom-nav-item ${currentView === 'overview' ? 'active' : ''}`}
-                         onClick={() => setCurrentView('overview')}>
-                        <Icons.Home size={20} />
-                        <span className="text-xs mt-1">首頁</span>
-                    </div>
-                    <div className="bottom-nav-item">
-                        <Icons.Search size={20} />
-                        <span className="text-xs mt-1">搜尋</span>
-                    </div>
-                    <div className="bottom-nav-item">
-                        <Icons.Archive size={20} />
-                        <span className="text-xs mt-1">庫存</span>
-                    </div>
-                    <div className="bottom-nav-item">
-                        <Icons.Settings size={20} />
-                        <span className="text-xs mt-1">設定</span>
-                    </div>
-                </div>
-            );
-            
+                      
             // 導航函數
             const navigateToDetail = async (item) => {
-    setLoading(true);
-    const records = await loadItemRecords(item.id);
-    const itemWithRecords = { ...item, records };
-    setSelectedItem(itemWithRecords);
-    setCurrentView('detail');
-    setLoading(false);
-    window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
+                setLoading(true);
+            const records = await loadItemRecords(item.id);
+            const itemWithRecords = { ...item, records };
+                setSelectedItem(itemWithRecords);
+                setCurrentView('detail');
+                setLoading(false);
+                window.history.pushState({ view: 'detail', itemId: item.id }, '', `#item-${item.id}`);
 };
             
             const navigateToOverview = () => {
@@ -1893,7 +1828,6 @@ const OperatorModal = () => {
                     {currentView === 'overview' && <OverviewPage />}
                     {currentView === 'detail' && <DetailPage />}
                     <FAB />
-                    <BottomNav />
                     <PasswordModal />
                     <EditItemModal />
                     <AddItemModal />
