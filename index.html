@@ -323,6 +323,39 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
+
+        /* 備註展開動畫 */
+        .note-expandable {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .note-expandable:hover {
+            color: #8b5cf6;
+        }
+
+        /* 刪除確認動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.3s;
+        }
+
+        /* 手機版表格優化 */
+        @media (max-width: 640px) {
+            .mobile-table {
+                font-size: 12px;
+            }
+            
+            .mobile-table th,
+            .mobile-table td {
+                padding: 8px 4px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -430,6 +463,12 @@
                 <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                 </svg>
+            ),
+            Eye: ({ size = 24, className = "" }) => (
+                <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
             )
         };
         
@@ -451,6 +490,9 @@
             const [showCategoryModal, setShowCategoryModal] = useState(false);
             const [showOperatorModal, setShowOperatorModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
+            const [expandedNotes, setExpandedNotes] = useState({});
+            const [showNoteModal, setShowNoteModal] = useState(null);
+            const [deleteConfirm, setDeleteConfirm] = useState(null);
 
             // 載入管理員密碼
             const [adminPassword, setAdminPassword] = useState('admin123'); // 預設值
@@ -572,6 +614,101 @@
                 } catch (error) {
                     console.error('載入記錄錯誤:', error);
                     return [];
+                }
+            };
+
+            // 刪除記錄
+            const deleteRecord = async (recordId) => {
+                if (!confirm('確定要刪除這筆記錄嗎？')) return;
+                
+                try {
+                    const { error } = await supabase
+                        .from('records')
+                        .delete()
+                        .eq('id', recordId);
+                    
+                    if (error) throw error;
+                    
+                    // 重新載入記錄
+                    if (selectedItem) {
+                        const updatedRecords = await loadItemRecords(selectedItem.id);
+                        setSelectedItem(prev => ({ ...prev, records: updatedRecords }));
+                    }
+                    
+                    alert('記錄已刪除');
+                } catch (error) {
+                    console.error('刪除記錄失敗:', error);
+                    alert('刪除失敗');
+                }
+            };
+
+            // 刪除類別
+            const deleteCategory = async (categoryId) => {
+                if (!confirm('確定要刪除這個類別嗎？')) return;
+                
+                try {
+                    const { error } = await supabase
+                        .from('categories')
+                        .delete()
+                        .eq('id', categoryId);
+                    
+                    if (error) throw error;
+                    
+                    await loadCategories();
+                    alert('類別已刪除');
+                } catch (error) {
+                    console.error('刪除類別失敗:', error);
+                    alert('刪除失敗');
+                }
+            };
+
+            // 刪除操作人員
+            const deleteOperator = async (operatorId) => {
+                if (!confirm('確定要刪除這個操作人員嗎？')) return;
+                
+                try {
+                    const { error } = await supabase
+                        .from('operators')
+                        .delete()
+                        .eq('id', operatorId);
+                    
+                    if (error) throw error;
+                    
+                    await loadOperators();
+                    alert('操作人員已刪除');
+                } catch (error) {
+                    console.error('刪除操作人員失敗:', error);
+                    alert('刪除失敗');
+                }
+            };
+
+            // 刪除商品
+            const deleteItem = async (itemId) => {
+                if (!confirm('確定要刪除這個商品嗎？相關的出入庫記錄也會被刪除。')) return;
+                
+                try {
+                    // 先刪除相關記錄
+                    await supabase
+                        .from('records')
+                        .delete()
+                        .eq('item_id', itemId);
+                    
+                    // 再刪除商品
+                    const { error } = await supabase
+                        .from('inventory')
+                        .delete()
+                        .eq('id', itemId);
+                    
+                    if (error) throw error;
+                    
+                    await loadInventory();
+                    if (currentView === 'detail') {
+                        navigateToOverview();
+                    }
+                    alert('商品已刪除');
+                } catch (error) {
+                    console.error('刪除商品失敗:', error);
+                    alert('刪除失敗');
                 }
             };
 
