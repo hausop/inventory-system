@@ -449,6 +449,48 @@
             const [showCategoryModal, setShowCategoryModal] = useState(false);
             const [showOperatorModal, setShowOperatorModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
+
+            // 載入管理員密碼
+const [adminPassword, setAdminPassword] = useState('admin123'); // 預設值
+
+const loadAdminPassword = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('admin_settings')
+            .select('setting_value')
+            .eq('setting_key', 'admin_password')
+            .single();
+        
+        if (data) {
+            setAdminPassword(data.setting_value);
+        }
+    } catch (error) {
+        console.error('載入密碼設定失敗:', error);
+    }
+};
+
+// 更新管理員密碼
+const updateAdminPassword = async (newPassword) => {
+    try {
+        const { error } = await supabase
+            .from('admin_settings')
+            .update({ 
+                setting_value: newPassword,
+                updated_at: new Date().toISOString()
+            })
+            .eq('setting_key', 'admin_password');
+        
+        if (error) throw error;
+        
+        setAdminPassword(newPassword);
+        alert('密碼更新成功！');
+        return true;
+    } catch (error) {
+        console.error('更新密碼失敗:', error);
+        alert('密碼更新失敗');
+        return false;
+    }
+};
             
             // 處理瀏覽器上一頁功能
    useEffect(() => {
@@ -572,6 +614,7 @@ const recalculateStock = async (itemId) => {
                 loadInventory();
                 loadCategories();
                 loadOperators();
+                loadAdminPassword();
             }, []);
             
             // Realtime 監聽器 - 即時同步資料
@@ -1763,52 +1806,116 @@ const OperatorModal = () => {
             
             // 密碼模態框
             const PasswordModal = () => {
-                const [password, setPassword] = useState('');
-                
-                const handleLogin = () => {
-                    if (password === 'admin123') {
-                        setIsAdmin(true);
-                        setShowPasswordModal(false);
-                        setPassword('');
-                    } else {
-                        alert('密碼錯誤！');
-                    }
-                };
-                
-                if (!showPasswordModal) return null;
-                
-                return (
-                    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-sm slide-up">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">管理員登入</h2>
-                            <input
-                                type="password"
-                                placeholder="請輸入密碼"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 mb-4"
-                                autoFocus
-                            />
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={handleLogin}
-                                    className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
-                                >
-                                    登入
-                                </button>
-                                <button
-                                    onClick={() => setShowPasswordModal(false)}
-                                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
-                                >
-                                    取消
-                                </button>
-                            </div>
-                            <p className="text-xs text-gray-500 text-center mt-4">提示：密碼是 admin123</p>
-                        </div>
-                    </div>
-                );
+            const [password, setPassword] = useState('');
+            const [showChangePassword, setShowChangePassword] = useState(false);
+            const [newPassword, setNewPassword] = useState('');
+            const [confirmPassword, setConfirmPassword] = useState('');
+    
+            const handleLogin = () => {
+                if (password === adminPassword) { // 改用動態密碼
+                    setIsAdmin(true);
+                    setShowPasswordModal(false);
+                    setPassword('');
+                 } else {
+                    alert('密碼錯誤！');
+                 }
             };
+    
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            alert('兩次輸入的密碼不一致！');
+            return;
+        }
+        if (newPassword.length < 6) {
+            alert('密碼長度至少需要6個字元！');
+            return;
+        }
+        
+        const success = await updateAdminPassword(newPassword);
+        if (success) {
+            setShowChangePassword(false);
+            setNewPassword('');
+            setConfirmPassword('');
+        }
+    };
+    
+    if (!showPasswordModal) return null;
+    
+    return (
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-soft-lg p-6 w-full max-w-sm slide-up">
+                {!showChangePassword ? (
+                    <>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">管理員登入</h2>
+                        <input
+                            type="password"
+                            placeholder="請輸入密碼"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 mb-4"
+                            autoFocus
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleLogin}
+                                className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                            >
+                                登入
+                            </button>
+                            <button
+                                onClick={() => setShowPasswordModal(false)}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
+                            >
+                                取消
+                            </button>
+                        </div>
+                        {isAdmin && (
+                            <button
+                                onClick={() => setShowChangePassword(true)}
+                                className="w-full mt-3 text-sm text-purple-600 hover:text-purple-700"
+                            >
+                                變更密碼
+                            </button>
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">變更密碼</h2>
+                        <input
+                            type="password"
+                            placeholder="新密碼"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 mb-3"
+                        />
+                        <input
+                            type="password"
+                            placeholder="確認新密碼"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleChangePassword}
+                                className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all"
+                            >
+                                確認變更
+                            </button>
+                            <button
+                                onClick={() => setShowChangePassword(false)}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all"
+                            >
+                                返回
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
             
             // 載入畫面
             if (loading) {
