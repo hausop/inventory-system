@@ -811,39 +811,39 @@ useEffect(() => {
             );
             
             // 分段控制器（類別篩選）
-            const CategoryFilter = () => {
-                const allCategories = ['全部', ...categories.map(c => c.name)];
-                const [indicatorStyle, setIndicatorStyle] = useState({});
-                const itemRefs = useRef({});
-                
-                useEffect(() => {
-                    const activeItem = itemRefs.current[filterCategory];
-                    if (activeItem) {
-                        setIndicatorStyle({
-                            left: activeItem.offsetLeft + 'px',
-                            width: activeItem.offsetWidth + 'px'
-                        });
-                    }
-                }, [filterCategory]);
-                
-                return (
-                    <div className="overflow-x-auto pb-2">
-                        <div className="segmented-control inline-flex min-w-max">
-                            <div className="segmented-control-indicator" style={indicatorStyle} />
-                            {allCategories.map(category => (
-                                <div
-                                    key={category}
-                                    ref={el => itemRefs.current[category] = el}
-                                    className={`segmented-control-item ${filterCategory === category ? 'active' : ''}`}
-                                    onClick={() => setFilterCategory(category)}
-                                >
-                                    {category}
-                                </div>
-                            ))}
-                        </div>
+const CategoryFilter = () => {
+    const allCategories = ['全部'].concat(categories.map(c => c.name));
+    const [indicatorStyle, setIndicatorStyle] = useState({});
+    const itemRefs = useRef({});
+    
+    useEffect(() => {
+        const activeItem = itemRefs.current[filterCategory];
+        if (activeItem) {
+            setIndicatorStyle({
+                left: activeItem.offsetLeft + 'px',
+                width: activeItem.offsetWidth + 'px'
+            });
+        }
+    }, [filterCategory]);
+    
+    return (
+        <div className="overflow-x-auto pb-2">
+            <div className="segmented-control inline-flex min-w-max">
+                <div className="segmented-control-indicator" style={indicatorStyle} />
+                {allCategories.map(category => (
+                    <div
+                        key={category}
+                        ref={el => itemRefs.current[category] = el}
+                        className={`segmented-control-item ${filterCategory === category ? 'active' : ''}`}
+                        onClick={() => setFilterCategory(category)}
+                    >
+                        {category}
                     </div>
-                );
-            };
+                ))}
+            </div>
+        </div>
+    );
+};
             
             // 商品卡片
 const ProductCard = ({ item }) => {
