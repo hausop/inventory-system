@@ -100,54 +100,37 @@
             animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
         
-        /* iOS Toggle 開關 - 修復 */
-.toggle-switch {
-    position: relative;
-    width: 51px;
-    height: 31px;
-    background-color: #e5e7eb;
-    border-radius: 31px;
-    transition: background-color 0.3s;
-    cursor: pointer;
-    z-index: 10; /* 增加z-index */
-    flex-shrink: 0; /* 防止被壓縮 */
-}
-
-.toggle-switch.active {
-    background-color: #8b5cf6;
-}
-
-.toggle-switch::after {
-    content: '';
-    position: absolute;
-    width: 27px;
-    height: 27px;
-    border-radius: 27px;
-    background-color: white;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.3s;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 11; /* 確保開關圓點在最上層 */
-}
-
-.toggle-switch.active::after {
-    transform: translateX(20px);
-}
-
-/* 管理模式控制區域 - 新增 */
-.admin-control-area {
-    position: relative;
-    z-index: 15;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px;
-}
-
-.admin-control-area .toggle-switch {
-    margin-left: 4px;
-}
+        /* iOS Toggle 開關 */
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background-color: #e5e7eb;
+            border-radius: 31px;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+        
+        .toggle-switch.active {
+            background-color: #8b5cf6;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 27px;
+            height: 27px;
+            border-radius: 27px;
+            background-color: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
         
         /* 分段控制器 */
         .segmented-control {
@@ -468,61 +451,61 @@
             const [editingItem, setEditingItem] = useState(null);
 
             // 載入管理員密碼
-const [adminPassword, setAdminPassword] = useState('admin123'); // 預設值
+            const [adminPassword, setAdminPassword] = useState('admin123'); // 預設值
 
-const loadAdminPassword = async () => {
-    try {
-        const { data, error } = await supabase
-            .from('admin_settings')
-            .select('setting_value')
-            .eq('setting_key', 'admin_password')
-            .single();
-        
-        if (data) {
-            setAdminPassword(data.setting_value);
-        }
-    } catch (error) {
-        console.error('載入密碼設定失敗:', error);
-    }
-};
+            const loadAdminPassword = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('admin_settings')
+                        .select('setting_value')
+                        .eq('setting_key', 'admin_password')
+                        .single();
+                    
+                    if (data) {
+                        setAdminPassword(data.setting_value);
+                    }
+                } catch (error) {
+                    console.error('載入密碼設定失敗:', error);
+                }
+            };
 
-// 更新管理員密碼
-const updateAdminPassword = async (newPassword) => {
-    try {
-        const { error } = await supabase
-            .from('admin_settings')
-            .update({ 
-                setting_value: newPassword,
-                updated_at: new Date().toISOString()
-            })
-            .eq('setting_key', 'admin_password');
-        
-        if (error) throw error;
-        
-        setAdminPassword(newPassword);
-        alert('密碼更新成功！');
-        return true;
-    } catch (error) {
-        console.error('更新密碼失敗:', error);
-        alert('密碼更新失敗');
-        return false;
-    }
-};
+            // 更新管理員密碼
+            const updateAdminPassword = async (newPassword) => {
+                try {
+                    const { error } = await supabase
+                        .from('admin_settings')
+                        .update({ 
+                            setting_value: newPassword,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', 'admin_password');
+                    
+                    if (error) throw error;
+                    
+                    setAdminPassword(newPassword);
+                    alert('密碼更新成功！');
+                    return true;
+                } catch (error) {
+                    console.error('更新密碼失敗:', error);
+                    alert('密碼更新失敗');
+                    return false;
+                }
+            };
             
             // 處理瀏覽器上一頁功能
-   useEffect(() => {
-    const handlePopState = (event) => {
-        if (currentView === 'detail') {
-            setCurrentView('overview');
-            setSelectedItem(null);
-        }
-    };
+            useEffect(() => {
+                const handlePopState = (event) => {
+                    if (currentView === 'detail') {
+                        setCurrentView('overview');
+                        setSelectedItem(null);
+                    }
+                };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-        window.removeEventListener('popstate', handlePopState);
-    };
-}, [currentView]);
+                window.addEventListener('popstate', handlePopState);
+                return () => {
+                    window.removeEventListener('popstate', handlePopState);
+                };
+            }, [currentView]);
             
             // 載入資料函數
             const loadInventory = async () => {
@@ -570,63 +553,63 @@ const updateAdminPassword = async (newPassword) => {
             };
 
             // 載入指定商品的記錄
-const loadItemRecords = async (itemId) => {
-    try {
-        const { data, error } = await supabase
-            .from('records')
-            .select('*')
-            .eq('item_id', itemId)
-            .order('operation_date', { ascending: false });
-        
-        if (error) {
-            console.error('載入記錄失敗:', error);
-            return [];
-        }
-        
-        return data || [];
-    } catch (error) {
-        console.error('載入記錄錯誤:', error);
-        return [];
-    }
-};
+            const loadItemRecords = async (itemId) => {
+                try {
+                    const { data, error } = await supabase
+                        .from('records')
+                        .select('*')
+                        .eq('item_id', itemId)
+                        .order('operation_date', { ascending: false });
+                    
+                    if (error) {
+                        console.error('載入記錄失敗:', error);
+                        return [];
+                    }
+                    
+                    return data || [];
+                } catch (error) {
+                    console.error('載入記錄錯誤:', error);
+                    return [];
+                }
+            };
 
             // 重新計算庫存（基於記錄）
-const recalculateStock = async (itemId) => {
-    try {
-        // 獲取所有記錄
-        const { data: records, error: recordsError } = await supabase
-            .from('records')
-            .select('*')
-            .eq('item_id', itemId);
-        
-        if (recordsError) throw recordsError;
-        
-        // 計算總庫存
-        let totalStock = 0;
-        records.forEach(record => {
-            if (record.type === 'in') {
-                totalStock += record.quantity;
-            } else {
-                totalStock -= record.quantity;
-            }
-        });
-        
-        // 更新庫存
-        const { error: updateError } = await supabase
-            .from('inventory')
-            .update({ stock: Math.max(0, totalStock) })
-            .eq('id', itemId);
-        
-        if (updateError) throw updateError;
-        
-        return totalStock;
-    } catch (error) {
-        console.error('重新計算庫存失敗:', error);
-        return null;
-    }
-};
-            
-            // 初始載入
+            const recalculateStock = async (itemId) => {
+                try {
+                    // 獲取所有記錄
+                    const { data: records, error: recordsError } = await supabase
+                        .from('records')
+                        .select('*')
+                        .eq('item_id', itemId);
+                    
+                    if (recordsError) throw recordsError;
+                    
+                    // 計算總庫存
+                    let totalStock = 0;
+                    records.forEach(record => {
+                        if (record.type === 'in') {
+                            totalStock += record.quantity;
+                        } else {
+                            totalStock -= record.quantity;
+                        }
+                    });
+                    
+                    // 更新庫存
+                    const { error: updateError } = await supabase
+                        .from('inventory')
+                        .update({ stock: Math.max(0, totalStock) })
+                        .eq('id', itemId);
+                    
+                    if (updateError) throw updateError;
+                    
+                    return totalStock;
+                } catch (error) {
+                    console.error('重新計算庫存失敗:', error);
+                    return null;
+                }
+            };
+
+// 初始載入
             useEffect(() => {
                 loadInventory();
                 loadCategories();
@@ -635,97 +618,97 @@ const recalculateStock = async (itemId) => {
             }, []);
             
             // Realtime 監聽器 - 即時同步資料
-useEffect(() => {
-    // 監聽庫存變化
-    const inventoryChannel = supabase
-        .channel('public:inventory')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'inventory' },
-            async (payload) => {
-                console.log('庫存變化:', payload);
-                
-                // 重新載入庫存
-                await loadInventory();
-                
-                // 如果正在查看的商品被更新，同步更新
-                if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
-                    const records = await loadItemRecords(selectedItem.id);
-                    setSelectedItem(prev => ({ 
-                        ...payload.new, 
-                        records 
-                    }));
-                }
-            }
-        )
-        .subscribe();
-
-    // 監聽記錄變化（全局）
-    const recordsChannel = supabase
-        .channel('public:records')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'records' },
-            async (payload) => {
-                console.log('記錄變化（全局）:', payload);
-                
-                // 當記錄變化時，重新計算並更新相關商品的庫存
-                if (payload.new || payload.old) {
-                    const itemId = payload.new?.item_id || payload.old?.item_id;
-                    
-                    // 重新載入庫存（這會觸發庫存表的更新）
-                    await loadInventory();
-                    
-                    // 如果影響的是當前查看的商品
-                    if (selectedItem && itemId === selectedItem.id) {
-                        const records = await loadItemRecords(itemId);
-                        const { data: itemData } = await supabase
-                            .from('inventory')
-                            .select('*')
-                            .eq('id', itemId)
-                            .single();
-                        
-                        if (itemData) {
-                            setSelectedItem({ 
-                                ...itemData, 
-                                records 
-                            });
+            useEffect(() => {
+                // 監聽庫存變化
+                const inventoryChannel = supabase
+                    .channel('public:inventory')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'inventory' },
+                        async (payload) => {
+                            console.log('庫存變化:', payload);
+                            
+                            // 重新載入庫存
+                            await loadInventory();
+                            
+                            // 如果正在查看的商品被更新，同步更新
+                            if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
+                                const records = await loadItemRecords(selectedItem.id);
+                                setSelectedItem(prev => ({ 
+                                    ...payload.new, 
+                                    records 
+                                }));
+                            }
                         }
-                    }
-                }
-            }
-        )
-        .subscribe();
+                    )
+                    .subscribe();
 
-    // 監聽操作人員變化
-    const operatorsChannel = supabase
-        .channel('public:operators')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'operators' },
-            (payload) => {
-                console.log('操作人員變化:', payload);
-                loadOperators();
-            }
-        )
-        .subscribe();
+                // 監聽記錄變化（全局）
+                const recordsChannel = supabase
+                    .channel('public:records')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'records' },
+                        async (payload) => {
+                            console.log('記錄變化（全局）:', payload);
+                            
+                            // 當記錄變化時，重新計算並更新相關商品的庫存
+                            if (payload.new || payload.old) {
+                                const itemId = payload.new?.item_id || payload.old?.item_id;
+                                
+                                // 重新載入庫存（這會觸發庫存表的更新）
+                                await loadInventory();
+                                
+                                // 如果影響的是當前查看的商品
+                                if (selectedItem && itemId === selectedItem.id) {
+                                    const records = await loadItemRecords(itemId);
+                                    const { data: itemData } = await supabase
+                                        .from('inventory')
+                                        .select('*')
+                                        .eq('id', itemId)
+                                        .single();
+                                    
+                                    if (itemData) {
+                                        setSelectedItem({ 
+                                            ...itemData, 
+                                            records 
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
 
-    // 監聽類別變化
-    const categoriesChannel = supabase
-        .channel('public:categories')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'categories' },
-            (payload) => {
-                console.log('類別變化:', payload);
-                loadCategories();
-            }
-        )
-        .subscribe();
+                // 監聽操作人員變化
+                const operatorsChannel = supabase
+                    .channel('public:operators')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'operators' },
+                        (payload) => {
+                            console.log('操作人員變化:', payload);
+                            loadOperators();
+                        }
+                    )
+                    .subscribe();
 
-    return () => {
-        inventoryChannel.unsubscribe();
-        recordsChannel.unsubscribe();
-        operatorsChannel.unsubscribe();
-        categoriesChannel.unsubscribe();
-    };
-}, [selectedItem?.id]);
+                // 監聽類別變化
+                const categoriesChannel = supabase
+                    .channel('public:categories')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'categories' },
+                        (payload) => {
+                            console.log('類別變化:', payload);
+                            loadCategories();
+                        }
+                    )
+                    .subscribe();
+
+                return () => {
+                    inventoryChannel.unsubscribe();
+                    recordsChannel.unsubscribe();
+                    operatorsChannel.unsubscribe();
+                    categoriesChannel.unsubscribe();
+                };
+            }, [selectedItem?.id]);
             
             // 篩選邏輯
             const filteredInventory = useMemo(() => {
@@ -766,7 +749,7 @@ useEffect(() => {
                                 </div>
                             </div>
                             
-                            {/* 右側控制區 */}
+                            {/* 右側控制區 - 修正點擊事件處理 */}
                             <div className="flex items-center gap-3">
                                 {/* 視圖切換 */}
                                 <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
@@ -784,66 +767,63 @@ useEffect(() => {
                                     </button>
                                 </div>
                                 
-                                {/* 管理模式開關 - 修復版 */}
-<div className="admin-control-area">
-    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
-    <div 
-        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
-        onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Toggle clicked, isAdmin:', isAdmin);
-            if (isAdmin) {
-                setIsAdmin(false);
-            } else {
-                setShowPasswordModal(true);
-            }
-        }}
-        style={{ 
-            cursor: 'pointer',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            MozUserSelect: 'none',
-            msUserSelect: 'none'
-        }}
-    />
-</div>
-            );
-            
-            // 分段控制器（類別篩選）
-const CategoryFilter = () => {
-    const allCategories = ['全部'].concat(categories.map(c => c.name));
-    const [indicatorStyle, setIndicatorStyle] = useState({});
-    const itemRefs = useRef({});
-    
-    useEffect(() => {
-        const activeItem = itemRefs.current[filterCategory];
-        if (activeItem) {
-            setIndicatorStyle({
-                left: activeItem.offsetLeft + 'px',
-                width: activeItem.offsetWidth + 'px'
-            });
-        }
-    }, [filterCategory]);
-    
-    return (
-        <div className="overflow-x-auto pb-2">
-            <div className="segmented-control inline-flex min-w-max">
-                <div className="segmented-control-indicator" style={indicatorStyle} />
-                {allCategories.map(category => (
-                    <div
-                        key={category}
-                        ref={el => itemRefs.current[category] = el}
-                        className={`segmented-control-item ${filterCategory === category ? 'active' : ''}`}
-                        onClick={() => setFilterCategory(category)}
-                    >
-                        {category}
+                                {/* 管理模式開關 - 修正事件處理 */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
+                                    <button 
+                                        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (isAdmin) {
+                                                setIsAdmin(false);
+                                            } else {
+                                                setShowPasswordModal(true);
+                                            }
+                                        }}
+                                        type="button"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                ))}
-            </div>
-        </div>
-    );
-};
+                </div>
+            );
+
+// 分段控制器（類別篩選）
+            const CategoryFilter = () => {
+                const allCategories = ['全部', ...categories.map(c => c.name)];
+                const [indicatorStyle, setIndicatorStyle] = useState({});
+                const itemRefs = useRef({});
+                
+                useEffect(() => {
+                    const activeItem = itemRefs.current[filterCategory];
+                    if (activeItem) {
+                        setIndicatorStyle({
+                            left: activeItem.offsetLeft + 'px',
+                            width: activeItem.offsetWidth + 'px'
+                        });
+                    }
+                }, [filterCategory]);
+                
+                return (
+                    <div className="overflow-x-auto pb-2">
+                        <div className="segmented-control inline-flex min-w-max">
+                            <div className="segmented-control-indicator" style={indicatorStyle} />
+                            {allCategories.map(category => (
+                                <div
+                                    key={category}
+                                    ref={el => itemRefs.current[category] = el}
+                                    className={`segmented-control-item ${filterCategory === category ? 'active' : ''}`}
+                                    onClick={() => setFilterCategory(category)}
+                                >
+                                    {category}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
             
             // 商品卡片
 const ProductCard = ({ item }) => {
