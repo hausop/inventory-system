@@ -131,6 +131,12 @@
         .toggle-switch.active::after {
             transform: translateX(20px);
         }
+
+        button.toggle-switch {
+    border: none;
+    background: transparent;
+    padding: 0;
+}
         
         /* 分段控制器 */
         .segmented-control {
@@ -768,17 +774,35 @@ useEffect(() => {
                                 </div>
                                 
                                 {/* 管理模式開關 */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
-                                    <div 
-                                        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
-                                        onClick={() => isAdmin ? setIsAdmin(false) : setShowPasswordModal(true)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<div className="flex items-center gap-2">
+    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
+    <button 
+        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
+        onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('按鈕被點擊了！');
+            console.log('isAdmin:', isAdmin);
+            console.log('showPasswordModal 之前:', showPasswordModal);
+            
+            if (isAdmin) {
+                console.log('登出管理員模式');
+                setIsAdmin(false);
+            } else {
+                console.log('顯示密碼視窗');
+                setShowPasswordModal(true);
+            }
+            
+            // 延遲檢查狀態是否改變
+            setTimeout(() => {
+                console.log('showPasswordModal 之後:', showPasswordModal);
+            }, 100);
+        }}
+        type="button"
+    >
+        <div className={`toggle-switch-inner ${isAdmin ? 'active' : ''}`}></div>
+    </button>
+</div>
             );
             
             // 分段控制器（類別篩選）
@@ -1944,8 +1968,9 @@ const OperatorModal = () => {
             );
         };
         
-        // 渲染應用
-        ReactDOM.render(<InventoryManager />, document.getElementById('root'));
+        // 渲染應用 (React 18 寫法)
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<InventoryManager />);
     </script>
 </body>
 </html>
