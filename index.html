@@ -507,6 +507,99 @@
                 loadOperators();
                 loadAdminPassword();
             }, []);
+
+            // Realtime 監聽器 - 即時同步資料
+                useEffect(() => {
+            // 監聽庫存變化
+    const inventoryChannel = supabase
+        .channel('public:inventory')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'inventory' },
+            async (payload) => {
+                console.log('庫存變化:', payload);
+                
+                // 重新載入庫存
+                await loadInventory();
+                
+                // 如果正在查看的商品被更新，同步更新
+                if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
+                    const records = await loadItemRecords(selectedItem.id);
+                    setSelectedItem(prev => ({ 
+                        ...payload.new, 
+                        records 
+                    }));
+                }
+            }
+        )
+        .subscribe();
+
+    // 監聽記錄變化（全局）
+    const recordsChannel = supabase
+        .channel('public:records')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'records' },
+            async (payload) => {
+                console.log('記錄變化（全局）:', payload);
+                
+                // 當記錄變化時，重新計算並更新相關商品的庫存
+                if (payload.new || payload.old) {
+                    const itemId = payload.new?.item_id || payload.old?.item_id;
+                    
+                    // 重新載入庫存（這會觸發庫存表的更新）
+                    await loadInventory();
+                    
+                    // 如果影響的是當前查看的商品
+                    if (selectedItem && itemId === selectedItem.id) {
+                        const records = await loadItemRecords(itemId);
+                        const { data: itemData } = await supabase
+                            .from('inventory')
+                            .select('*')
+                            .eq('id', itemId)
+                            .single();
+                        
+                        if (itemData) {
+                            setSelectedItem({ 
+                                ...itemData, 
+                                records 
+                            });
+                        }
+                    }
+                }
+            }
+        )
+        .subscribe();
+
+    // 監聽操作人員變化
+    const operatorsChannel = supabase
+        .channel('public:operators')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'operators' },
+            (payload) => {
+                console.log('操作人員變化:', payload);
+                loadOperators();
+            }
+        )
+        .subscribe();
+
+    // 監聽類別變化
+    const categoriesChannel = supabase
+        .channel('public:categories')
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'categories' },
+            (payload) => {
+                console.log('類別變化:', payload);
+                loadCategories();
+            }
+        )
+        .subscribe();
+
+    return () => {
+        inventoryChannel.unsubscribe();
+        recordsChannel.unsubscribe();
+        operatorsChannel.unsubscribe();
+        categoriesChannel.unsubscribe();
+    };
+}, [selectedItem?.id]);
             
             const filteredInventory = useMemo(() => {
                 return inventory.filter(item => {
@@ -829,7 +922,7 @@
             const OverviewPage = () => (
                 <div className="min-h-screen pt-20 pb-8">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                        <div className="grid grid-cols-3 gap-4 mb-6">
                             <div className="bg-white rounded-xl p-4 shadow-soft">
                                 <div className="flex items-center justify-between">
                                     <div>
