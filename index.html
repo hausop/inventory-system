@@ -388,6 +388,10 @@
             const [showFabMenu, setShowFabMenu] = useState(false);
             const [viewMode, setViewMode] = useState('grid');
             const [searchQuery, setSearchQuery] = useState('');
+// 添加這個 useCallback
+const handleSearchChange = useCallback((e) => {
+    setSearchQuery(e.target.value);
+}, []);
             const [filterCategory, setFilterCategory] = useState('全部');
             const [inventory, setInventory] = useState([]);
             const [categories, setCategories] = useState([]);
@@ -631,7 +635,7 @@
                                         type="text"
                                         placeholder="搜尋商品..."
                                         value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onChange={handleSearchChange}
                                         className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-all"
                                     />
                                 </div>
