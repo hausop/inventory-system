@@ -378,7 +378,17 @@
                 </svg>
             )
         };
-        
+
+        // 🔧 防抖 Hook（Debounce）
+        function useDebounce(value, delay) {
+          const [debounced, setDebounced] = React.useState(value);
+          React.useEffect(() => {
+            const handler = setTimeout(() => setDebounced(value), delay);
+            return () => clearTimeout(handler);
+          }, [value, delay]);
+          return debounced;
+        }
+ 
         // 主應用程式
         const InventoryManager = () => {
             const [currentView, setCurrentView] = useState('overview');
@@ -388,6 +398,7 @@
             const [showFabMenu, setShowFabMenu] = useState(false);
             const [viewMode, setViewMode] = useState('grid');
             const [searchQuery, setSearchQuery] = useState('');
+            const debouncedSearch = useDebounce(searchQuery, 300); // 🔧 新增這行
             const [filterCategory, setFilterCategory] = useState('全部');
             const [inventory, setInventory] = useState([]);
             const [categories, setCategories] = useState([]);
@@ -603,11 +614,11 @@
             
             const filteredInventory = useMemo(() => {
                 return inventory.filter(item => {
-                    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesSearch = item.name.toLowerCase().includes(debouncedSearch.toLowerCase()); // 🔧 改這裡
                     const matchesCategory = filterCategory === '全部' || item.category === filterCategory;
                     return matchesSearch && matchesCategory;
                 });
-            }, [inventory, searchQuery, filterCategory]);
+            }, [inventory, debouncedSearch, filterCategory]); // 🔧 這裡把 searchQuery 改成 debouncedSearch
             
             // 頂部導航欄
             const TopNavBar = () => (
