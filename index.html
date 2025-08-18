@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>庫存管理系統 - Modern UI</title>
+    <title>庫存管理系統 - 搜尋功能修復版</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -310,6 +310,23 @@
         // 初始化 Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
+        // Debounce Hook
+        const useDebounce = (value, delay) => {
+            const [debouncedValue, setDebouncedValue] = useState(value);
+            
+            useEffect(() => {
+                const handler = setTimeout(() => {
+                    setDebouncedValue(value);
+                }, delay);
+                
+                return () => {
+                    clearTimeout(handler);
+                };
+            }, [value, delay]);
+            
+            return debouncedValue;
+        };
+        
         // 現代化圖示組件
         const Icons = {
             Package: ({ size = 24, className = "" }) => (
@@ -387,7 +404,11 @@
             const [showPasswordModal, setShowPasswordModal] = useState(false);
             const [showFabMenu, setShowFabMenu] = useState(false);
             const [viewMode, setViewMode] = useState('grid');
-            const [searchQuery, setSearchQuery] = useState('');
+            
+            // 搜尋相關狀態 - 修復重點
+            const [searchInput, setSearchInput] = useState(''); // 即時輸入值
+            const debouncedSearchTerm = useDebounce(searchInput, 300); // 防抖後的搜尋值
+            
             const [filterCategory, setFilterCategory] = useState('全部');
             const [inventory, setInventory] = useState([]);
             const [categories, setCategories] = useState([]);
@@ -398,6 +419,9 @@
             const [showOperatorModal, setShowOperatorModal] = useState(false);
             const [editingItem, setEditingItem] = useState(null);
             const [adminPassword, setAdminPassword] = useState('admin123');
+            
+            // 搜尋輸入框參考
+            const searchInputRef = useRef(null);
 
             const loadAdminPassword = async () => {
                 try {
@@ -508,172 +532,172 @@
                 loadAdminPassword();
             }, []);
 
-            // Realtime 監聽器 - 即時同步資料
-                useEffect(() => {
-            // 監聽庫存變化
-    const inventoryChannel = supabase
-        .channel('public:inventory')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'inventory' },
-            async (payload) => {
-                console.log('庫存變化:', payload);
-                
-                // 重新載入庫存
-                await loadInventory();
-                
-                // 如果正在查看的商品被更新，同步更新
-                if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
-                    const records = await loadItemRecords(selectedItem.id);
-                    setSelectedItem(prev => ({ 
-                        ...payload.new, 
-                        records 
-                    }));
-                }
-            }
-        )
-        .subscribe();
-
-    // 監聽記錄變化（全局）
-    const recordsChannel = supabase
-        .channel('public:records')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'records' },
-            async (payload) => {
-                console.log('記錄變化（全局）:', payload);
-                
-                // 當記錄變化時，重新計算並更新相關商品的庫存
-                if (payload.new || payload.old) {
-                    const itemId = payload.new?.item_id || payload.old?.item_id;
-                    
-                    // 重新載入庫存（這會觸發庫存表的更新）
-                    await loadInventory();
-                    
-                    // 如果影響的是當前查看的商品
-                    if (selectedItem && itemId === selectedItem.id) {
-                        const records = await loadItemRecords(itemId);
-                        const { data: itemData } = await supabase
-                            .from('inventory')
-                            .select('*')
-                            .eq('id', itemId)
-                            .single();
-                        
-                        if (itemData) {
-                            setSelectedItem({ 
-                                ...itemData, 
-                                records 
-                            });
+            // Realtime 監聽器
+            useEffect(() => {
+                const inventoryChannel = supabase
+                    .channel('public:inventory')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'inventory' },
+                        async (payload) => {
+                            console.log('庫存變化:', payload);
+                            await loadInventory();
+                            
+                            if (selectedItem && payload.new && payload.new.id === selectedItem.id) {
+                                const records = await loadItemRecords(selectedItem.id);
+                                setSelectedItem(prev => ({ 
+                                    ...payload.new, 
+                                    records 
+                                }));
+                            }
                         }
-                    }
-                }
-            }
-        )
-        .subscribe();
+                    )
+                    .subscribe();
 
-    // 監聽操作人員變化
-    const operatorsChannel = supabase
-        .channel('public:operators')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'operators' },
-            (payload) => {
-                console.log('操作人員變化:', payload);
-                loadOperators();
-            }
-        )
-        .subscribe();
+                const recordsChannel = supabase
+                    .channel('public:records')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'records' },
+                        async (payload) => {
+                            console.log('記錄變化（全局）:', payload);
+                            
+                            if (payload.new || payload.old) {
+                                const itemId = payload.new?.item_id || payload.old?.item_id;
+                                await loadInventory();
+                                
+                                if (selectedItem && itemId === selectedItem.id) {
+                                    const records = await loadItemRecords(itemId);
+                                    const { data: itemData } = await supabase
+                                        .from('inventory')
+                                        .select('*')
+                                        .eq('id', itemId)
+                                        .single();
+                                    
+                                    if (itemData) {
+                                        setSelectedItem({ 
+                                            ...itemData, 
+                                            records 
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
 
-    // 監聽類別變化
-    const categoriesChannel = supabase
-        .channel('public:categories')
-        .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'categories' },
-            (payload) => {
-                console.log('類別變化:', payload);
-                loadCategories();
-            }
-        )
-        .subscribe();
+                const operatorsChannel = supabase
+                    .channel('public:operators')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'operators' },
+                        (payload) => {
+                            console.log('操作人員變化:', payload);
+                            loadOperators();
+                        }
+                    )
+                    .subscribe();
 
-    return () => {
-        inventoryChannel.unsubscribe();
-        recordsChannel.unsubscribe();
-        operatorsChannel.unsubscribe();
-        categoriesChannel.unsubscribe();
-    };
-}, [selectedItem?.id]);
+                const categoriesChannel = supabase
+                    .channel('public:categories')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'categories' },
+                        (payload) => {
+                            console.log('類別變化:', payload);
+                            loadCategories();
+                        }
+                    )
+                    .subscribe();
+
+                return () => {
+                    inventoryChannel.unsubscribe();
+                    recordsChannel.unsubscribe();
+                    operatorsChannel.unsubscribe();
+                    categoriesChannel.unsubscribe();
+                };
+            }, [selectedItem?.id]);
             
+            // 使用防抖後的搜尋值進行過濾
             const filteredInventory = useMemo(() => {
                 return inventory.filter(item => {
-                    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+                    const matchesSearch = item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
                     const matchesCategory = filterCategory === '全部' || item.category === filterCategory;
                     return matchesSearch && matchesCategory;
                 });
-            }, [inventory, searchQuery, filterCategory]);
+            }, [inventory, debouncedSearchTerm, filterCategory]);
             
-            // 頂部導航欄
-            const TopNavBar = () => (
-                <div className="fixed top-0 left-0 right-0 glass-morphism shadow-soft z-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
-                                    <Icons.Package size={20} className="text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-lg font-bold text-gray-800">庫存管理</h1>
-                                    <p className="text-xs text-gray-500">智能倉儲系統</p>
-                                </div>
-                            </div>
-                            
-                            <div className="hidden md:block flex-1 max-w-md mx-8">
-                                <div className="search-box relative">
-                                    <Icons.Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="搜尋商品..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-all"
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3">
-                                <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
-                                    <button
-                                        onClick={() => setViewMode('grid')}
-                                        className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
-                                    >
-                                        <Icons.Grid size={18} className={viewMode === 'grid' ? 'text-purple-600' : 'text-gray-500'} />
-                                    </button>
-                                    <button
-                                        onClick={() => setViewMode('list')}
-                                        className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
-                                    >
-                                        <Icons.List size={18} className={viewMode === 'list' ? 'text-purple-600' : 'text-gray-500'} />
-                                    </button>
+            // 頂部導航欄 - 修復搜尋輸入框
+            const TopNavBar = () => {
+                // 處理搜尋輸入變化
+                const handleSearchChange = useCallback((e) => {
+                    const value = e.target.value;
+                    setSearchInput(value);
+                }, []);
+                
+                return (
+                    <div className="fixed top-0 left-0 right-0 glass-morphism shadow-soft z-50">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex items-center justify-between h-16">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
+                                        <Icons.Package size={20} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-lg font-bold text-gray-800">庫存管理</h1>
+                                        <p className="text-xs text-gray-500">智能倉儲系統</p>
+                                    </div>
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
-                                    <button 
-                                        className={`toggle-switch ${isAdmin ? 'active' : ''}`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (isAdmin) {
-                                                setIsAdmin(false);
-                                            } else {
-                                                setShowPasswordModal(true);
-                                            }
-                                        }}
-                                        type="button"
-                                    />
+                                <div className="hidden md:block flex-1 max-w-md mx-8">
+                                    <div className="search-box relative">
+                                        <Icons.Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            placeholder="搜尋商品..."
+                                            value={searchInput}
+                                            onChange={handleSearchChange}
+                                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 transition-all"
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-3">
+                                    <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
+                                        <button
+                                            onClick={() => setViewMode('grid')}
+                                            className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                                        >
+                                            <Icons.Grid size={18} className={viewMode === 'grid' ? 'text-purple-600' : 'text-gray-500'} />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode('list')}
+                                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                                        >
+                                            <Icons.List size={18} className={viewMode === 'list' ? 'text-purple-600' : 'text-gray-500'} />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600 hidden sm:inline">管理模式</span>
+                                        <button 
+                                            className={`toggle-switch ${isAdmin ? 'active' : ''}`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (isAdmin) {
+                                                    setIsAdmin(false);
+                                                } else {
+                                                    setShowPasswordModal(true);
+                                                }
+                                            }}
+                                            type="button"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            );
+                );
+            };
 
             // 修復後的分段控制器
             const CategoryFilter = () => {
