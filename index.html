@@ -1390,7 +1390,35 @@ const NoteModal = () => {
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
                                     />
                                 </div>
-                                
+
+                                {/* 商品圖片上傳 */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        setEditForm({ ...editForm, imagePreview: url, imageFile: file });
+      }
+    }}
+    className="w-full"
+  />
+  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+    {editForm?.imagePreview ? (
+      <img
+        src={editForm.imagePreview}
+        alt="預覽"
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <span className="text-gray-400 text-sm">預覽區</span>
+    )}
+  </div>
+</div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
                                     <select
@@ -1540,6 +1568,34 @@ const NoteModal = () => {
                                         placeholder="請輸入商品名稱"
                                     />
                                 </div>
+
+                                {/* 商品圖片上傳 */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+  <input
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        setItemForm({ ...itemForm, imagePreview: url, imageFile: file });
+      }
+    }}
+    className="w-full"
+  />
+  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+    {itemForm?.imagePreview ? (
+      <img
+        src={itemForm.imagePreview}
+        alt="預覽"
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <span className="text-gray-400 text-sm">預覽區</span>
+    )}
+  </div>
+</div>
                                 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">類別</label>
