@@ -10,6 +10,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
     <style>
+    <link href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.css" rel="stylesheet">
+    <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.js"></script>
+
         * {
             margin: 0;
             padding: 0;
@@ -302,6 +305,86 @@
     
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback, memo, useMemo } = React;
+
+        // 🟣 裁切工具函式與元件開始（完整貼上這段）
+function dataURLtoFile(dataurl, filename) {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) u8arr[n] = bstr.charCodeAt(n);
+  return new File([u8arr], filename, { type: mime });
+}
+
+const ImageCropperModal = ({ src, onCancel, onConfirm, aspectRatio = 1 }) => {
+  const imgRef = React.useRef(null);
+  const cropperRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!src || !imgRef.current) return;
+    cropperRef.current = new window.Cropper(imgRef.current, {
+      viewMode: 1,
+      dragMode: 'move',
+      aspectRatio,
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      movable: true,
+      zoomable: true,
+      scalable: false,
+      rotatable: false,
+      checkCrossOrigin: false,
+    });
+    return () => {
+      if (cropperRef.current) {
+        cropperRef.current.destroy();
+        cropperRef.current = null;
+      }
+    };
+  }, [src, aspectRatio]);
+
+  const handleConfirm = async () => {
+    const canvas = cropperRef.current.getCroppedCanvas({ imageSmoothingQuality: 'high' });
+    const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+    const file = dataURLtoFile(dataURL, `cropped_${Date.now()}.jpg`);
+    onConfirm({ file, dataURL, width: canvas.width, height: canvas.height });
+  };
+
+  if (!src) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h3 className="text-lg font-semibold text-gray-800">裁切圖片</h3>
+          <button onClick={onCancel} className="text-gray-500 hover:text-gray-700">×</button>
+        </div>
+        <div className="p-4">
+          <div className="w-full h-[50vh] bg-gray-100 rounded-xl overflow-hidden">
+            <img ref={imgRef} src={src} alt="to-crop" className="max-w-full block" />
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            滑鼠滾輪縮放、拖動圖片移動。比例：{aspectRatio === 1 ? '1:1 方形' : aspectRatio.toFixed(2)}
+          </p>
+        </div>
+        <div className="flex gap-3 px-4 pb-4">
+          <button
+            onClick={handleConfirm}
+            className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl hover:shadow-lg transition-all">
+            確認裁切
+          </button>
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all">
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// 🟣 裁切工具函式與元件結束
         
         // 🔧 Supabase 設定
         const SUPABASE_URL = 'https://sfgvmpsmndyogqrdtoar.supabase.co';
@@ -1340,6 +1423,10 @@ const NoteModal = () => {
                     specifications: editingItem?.specifications || '',
                     unit_price: editingItem?.unit_price || ''
                 });
+
+                // ★ 新增：裁切器用的暫存狀態（編輯用）
+  const [showCropE, setShowCropE] = useState(false);
+  const [rawPreviewE, setRawPreviewE] = useState(null);
                 
                 const handleSave = async () => {
                     try {
@@ -1391,32 +1478,60 @@ const NoteModal = () => {
                                     />
                                 </div>
 
-                                {/* 商品圖片上傳 */}
+{/* 商品圖片（含裁切） */}
 <div>
   <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+
   <input
     type="file"
     accept="image/*"
     onChange={(e) => {
-      const file = e.target.files[0];
+      const file = e.target.files?.[0];
       if (file) {
         const url = URL.createObjectURL(file);
-        setEditForm({ ...editForm, imagePreview: url, imageFile: file });
+        setRawPreviewE(url);
+        setShowCropE(true);
       }
     }}
     className="w-full"
   />
-  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+
+  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden flex items-center justify-center">
     {editForm?.imagePreview ? (
-      <img
-        src={editForm.imagePreview}
-        alt="預覽"
-        className="w-full h-full object-cover"
-      />
+      <img src={editForm.imagePreview} alt="預覽" className="w-full h-full object-cover" />
     ) : (
       <span className="text-gray-400 text-sm">預覽區</span>
     )}
   </div>
+
+  {editForm?.imageFile && (
+    <p className="mt-2 text-xs text-gray-500">
+      解析度：{editForm.imageWidth}×{editForm.imageHeight}px，
+      檔案大小：約 {(editForm.imageFile.size / 1024).toFixed(1)} KB
+    </p>
+  )}
+
+  {showCropE && (
+    <ImageCropperModal
+      src={rawPreviewE}
+      aspectRatio={1}
+      onCancel={() => {
+        setShowCropE(false);
+        setRawPreviewE(null);
+      }}
+      onConfirm={({ file, dataURL, width, height }) => {
+        setShowCropE(false);
+        setEditForm(prev => ({
+          ...prev,
+          imagePreview: dataURL,
+          imageFile: file,
+          imageWidth: width,
+          imageHeight: height
+        }));
+        setRawPreviewE(null);
+      }}
+    />
+  )}
 </div>
 
                                 <div>
@@ -1494,6 +1609,10 @@ const NoteModal = () => {
                     stock: '0'
                 });
                 
+                // ★ 新增：裁切器用的暫存狀態
+  const [showCrop, setShowCrop] = useState(false);
+  const [rawPreview, setRawPreview] = useState(null);
+                
                 const handleAdd = async () => {
                     if (!itemForm.name.trim()) {
                         alert('請填寫商品名稱');
@@ -1569,32 +1688,64 @@ const NoteModal = () => {
                                     />
                                 </div>
 
-                                {/* 商品圖片上傳 */}
+{/* 商品圖片（含裁切） */}
 <div>
   <label className="block text-sm font-medium text-gray-700 mb-1">商品圖片</label>
+
   <input
     type="file"
     accept="image/*"
     onChange={(e) => {
-      const file = e.target.files[0];
+      const file = e.target.files?.[0];
       if (file) {
         const url = URL.createObjectURL(file);
-        setItemForm({ ...itemForm, imagePreview: url, imageFile: file });
+        // 先不直接存入表單；打開裁切器
+        setRawPreview(url);
+        setShowCrop(true);
       }
     }}
     className="w-full"
   />
-  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+
+  {/* 預覽區：顯示裁切後結果 */}
+  <div className="mt-2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden flex items-center justify-center">
     {itemForm?.imagePreview ? (
-      <img
-        src={itemForm.imagePreview}
-        alt="預覽"
-        className="w-full h-full object-cover"
-      />
+      <img src={itemForm.imagePreview} alt="預覽" className="w-full h-full object-cover" />
     ) : (
       <span className="text-gray-400 text-sm">預覽區</span>
     )}
   </div>
+
+  {/* 額外資訊：像素 / 檔案大小（可選） */}
+  {itemForm?.imageFile && (
+    <p className="mt-2 text-xs text-gray-500">
+      解析度：{itemForm.imageWidth}×{itemForm.imageHeight}px，
+      檔案大小：約 {(itemForm.imageFile.size / 1024).toFixed(1)} KB
+    </p>
+  )}
+
+  {/* 裁切器 Modal */}
+  {showCrop && (
+    <ImageCropperModal
+      src={rawPreview}
+      aspectRatio={1}  // 需要 4:3 改 4/3；自由比例可改成 null 並在元件內拿掉限制
+      onCancel={() => {
+        setShowCrop(false);
+        setRawPreview(null);
+      }}
+      onConfirm={({ file, dataURL, width, height }) => {
+        setShowCrop(false);
+        setItemForm(prev => ({
+          ...prev,
+          imagePreview: dataURL,     // 給畫面看的
+          imageFile: file,           // 真正上傳用
+          imageWidth: width,         // 顯示資訊用
+          imageHeight: height
+        }));
+        setRawPreview(null);
+      }}
+    />
+  )}
 </div>
                                 
                                 <div>
